@@ -4,4 +4,4 @@
 
 #include <stdio.h>
 
-void handle_client(void);
+void *handle_client(void *arg);

@@ -3,9 +3,6 @@
 //
 
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 void setup_socket(int *fd);
 void setup_address(struct sockaddr_in *address, socklen_t *address_len, in_port_t port);

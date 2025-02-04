@@ -1,20 +1,24 @@
 #include "../include/handle_client_requests.h"
 #include "../include/setup_helper.h"
 #include <arpa/inet.h>
+#include <errno.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define PORT 8080
 
 static void setup_signal_handler(void);
 static void sigint_handler(int sig_num);
 
-static volatile sig_atomic_t exit_flag = 0;
+static volatile sig_atomic_t exit_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 int main(void)
 {
-    int                server_fd;
+    int server_fd;
+    // int                opt;
     socklen_t          server_manager_addr_len;
     struct sockaddr_in server_manager_address;
     pthread_t          server_listener_thread;
@@ -22,16 +26,20 @@ int main(void)
     setup_socket(&server_fd);
     setup_address(&server_manager_address, &server_manager_addr_len, PORT);
 
+    // opt = 1;
+    // setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
     if(bind(server_fd, (struct sockaddr *)&server_manager_address, server_manager_addr_len) != 0)
     {
-        perror("Bind failed:");
+        perror("Bind failed");
         close(server_fd);
         return EXIT_FAILURE;
     }
 
     if(listen(server_fd, SOMAXCONN) != 0)
     {
-        perror("Listen failed:");
+        perror("Listen failed");
+        printf("Error code: %d\n", errno);
         close(server_fd);
         return EXIT_FAILURE;
     }
@@ -44,20 +52,26 @@ int main(void)
 
         client_fd = accept(server_fd, (struct sockaddr *)&server_manager_address, &server_manager_addr_len);
 
-        if (client_fd < 0)
+        if(client_fd < 0)
         {
             if(exit_flag)
             {
                 break;
             }
-            perror("Client accept failed:");
+            perror("Client accept failed");
             continue;
         }
 
-        //Code still to do
-    }
+        if(pthread_create(&server_listener_thread, NULL, handle_client, (void *)&client_fd) != 0)
+        {
+            perror("pthread_create failed");
+        }
+        pthread_join(server_listener_thread, NULL);
 
-    return EXIT_SUCCESS;
+        close(client_fd);
+    }
+    close(server_fd);
+    return 0;
 }
 
 static void setup_signal_handler(void)
@@ -80,7 +94,7 @@ static void setup_signal_handler(void)
 
     if(sigaction(SIGINT, &sa, NULL) == -1)
     {
-        perror("Setup signal handler failed:");
+        perror("Setup signal handler failed");
         exit(EXIT_FAILURE);
     }
 }

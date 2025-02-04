@@ -4,7 +4,13 @@
 
 #include "../include/handle_client_requests.h"
 
-void handle_client(void)
+void *handle_client(void *arg)
 {
-    printf("Client requests\n");
+    int client_fd;
+
+    client_fd = *(int *)arg;
+
+    printf("Client requested server IP address\n");
+    printf("Client fd: %d\n", client_fd);
+    return NULL;
 }
