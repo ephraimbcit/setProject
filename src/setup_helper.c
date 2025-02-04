@@ -1,0 +1,29 @@
+//
+// Created by ephraim on 2/3/25.
+//
+
+#include "../include/setup_helper.h"
+
+void setup_socket(int *fd)
+{
+    *fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if(*fd == -1)
+    {
+        perror("Error during socket creation:\n");
+        exit(EXIT_FAILURE);
+    }
+    printf("Socket created\n");
+}
+
+void setup_address(struct sockaddr_in *address, socklen_t *address_len, in_port_t port)
+{
+    memset(address, 0, sizeof(*address));
+
+    address->sin_family      = AF_INET;
+    address->sin_port        = htons(port);
+    address->sin_addr.s_addr = INADDR_ANY;
+
+    *address_len = sizeof(*address);
+
+    printf("Address created\n");
+}

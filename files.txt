@@ -1,1 +1,1 @@
-main src/main.c
+main src/main.c src/setup_helper.c src/handle_client_requests.c
