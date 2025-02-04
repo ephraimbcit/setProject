@@ -6,16 +6,19 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define SERVER_MANAGER_RESPONSE_MAX_SIZE 16
+#define IP_STARTING_INDEX 5
+#define CLIENT_REQUEST_MAX_SIZE 2
+#define UTF8STRING_PROTOCOL 0x0C
+
 void *handle_client(void *arg)
 {
     int                 client_fd;
     int                 server_is_live;
-    int                 counter;
     ssize_t             bytes_recieved;
-    ssize_t             bytes_sent;
-    unsigned char       client_request[2];
-    const unsigned char server_ip[12] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    unsigned char       server_manager_response[16];
+    unsigned char       client_request[CLIENT_REQUEST_MAX_SIZE];
+    const unsigned char server_ip[SERVER_MANAGER_RESPONSE_MAX_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    unsigned char       server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
     unsigned char       client_type;
     unsigned char       client_version;
     unsigned char       server_response_type;
@@ -29,7 +32,7 @@ void *handle_client(void *arg)
     server_response_version    = 0x01;
     server_manager_response[0] = server_response_type;
     server_manager_response[1] = server_response_version;
-    server_manager_response[3] = 0x0C;
+    server_manager_response[3] = UTF8STRING_PROTOCOL;
 
     bytes_recieved = read(client_fd, client_request, 2);
 
@@ -52,12 +55,15 @@ void *handle_client(void *arg)
 
     if(server_is_live)
     {
-        server_manager_response[2] = 0x01;
-        server_manager_response[4] = 0x0C;
+        int     counter;
+        ssize_t bytes_sent;
 
-        for(counter = 5; counter < 16; counter++)
+        server_manager_response[2] = 0x01;
+        server_manager_response[4] = UTF8STRING_PROTOCOL;
+
+        for(counter = IP_STARTING_INDEX; counter < SERVER_MANAGER_RESPONSE_MAX_SIZE; counter++)
         {
-            server_manager_response[counter] = server_ip[counter - 4];
+            server_manager_response[counter] = server_ip[counter - IP_STARTING_INDEX];
         }
 
         bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);

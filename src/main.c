@@ -76,7 +76,6 @@ int main(void)
 
         pthread_detach(server_listener_thread);
 
-        free(client_fd_ptr);
         close(client_fd);
     }
     close(server_fd);
