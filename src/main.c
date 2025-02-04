@@ -48,26 +48,35 @@ int main(void)
 
     while(!exit_flag)
     {
-        int client_fd;
+        int *client_fd_ptr;
+        int  client_fd;
 
-        client_fd = accept(server_fd, (struct sockaddr *)&server_manager_address, &server_manager_addr_len);
+        client_fd_ptr = (int *)malloc(sizeof(int));
+        client_fd     = accept(server_fd, (struct sockaddr *)&server_manager_address, &server_manager_addr_len);
 
         if(client_fd < 0)
         {
             if(exit_flag)
             {
+                free(client_fd_ptr);
                 break;
             }
             perror("Client accept failed");
+            free(client_fd_ptr);
             continue;
         }
 
-        if(pthread_create(&server_listener_thread, NULL, handle_client, (void *)&client_fd) != 0)
+        *client_fd_ptr = client_fd;
+
+        if(pthread_create(&server_listener_thread, NULL, handle_client, (void *)client_fd_ptr) != 0)
         {
             perror("pthread_create failed");
+            free(client_fd_ptr);
         }
-        pthread_join(server_listener_thread, NULL);
 
+        pthread_detach(server_listener_thread);
+
+        free(client_fd_ptr);
         close(client_fd);
     }
     close(server_fd);
