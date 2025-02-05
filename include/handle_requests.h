@@ -5,4 +5,4 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *handle_requests(void *arg);
+void *handle_starter(void *arg);

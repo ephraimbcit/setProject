@@ -2,7 +2,7 @@
 // Created by ephraim on 2/4/25.
 //
 
-#ifndef HANDLE_SERVER_REPONSES_H
-#define HANDLE_SERVER_REPONSES_H
+#include <stdio.h>
+#include <stdlib.h>
 
-#endif //HANDLE_SERVER_REPONSES_H
+void *handle_server_responses(void *arg);

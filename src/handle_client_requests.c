@@ -13,8 +13,8 @@
 
 void *handle_client(void *arg)
 {
-    int client_fd;
-    int server_is_live;
+    int                 client_fd;
+    int                 server_is_live;
     ssize_t             bytes_recieved;
     unsigned char       client_request[CLIENT_REQUEST_MAX_SIZE];
     const unsigned char server_ip[SERVER_MANAGER_RESPONSE_MAX_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};

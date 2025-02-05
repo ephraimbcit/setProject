@@ -4,7 +4,11 @@
 
 #include "../include/handle_requests.h"
 
-void *handle_requests(void *arg)
+void *handle_starter(void *arg)
 {
+    int starter_fd;
+
+    starter_fd = *(int *)arg;
+    printf("Starter fd: %d\n", starter_fd);
     return NULL;
 }

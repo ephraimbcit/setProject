@@ -36,7 +36,7 @@ int main(void)
     // pthread_t          server_listener_thread;
 
     setup_socket(&client_fd);
-    setup_address(&client_address, &client_addr_len,CLIENT_PORT);
+    setup_address(&client_address, &client_addr_len, CLIENT_PORT);
 
     // setup_socket(&starter_fd);
     // setup_address(&starter_address, &starter_addr_len,SERVER_PORT);
