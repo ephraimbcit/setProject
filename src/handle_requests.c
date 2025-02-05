@@ -3,3 +3,8 @@
 //
 
 #include "../include/handle_requests.h"
+
+void *handle_requests(void *arg)
+{
+    return NULL;
+}

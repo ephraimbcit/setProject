@@ -2,7 +2,7 @@
 // Created by ephraim on 2/4/25.
 //
 
-#ifndef HANDLE_REQUESTS_H
-#define HANDLE_REQUESTS_H
+#include <stdio.h>
+#include <stdlib.h>
 
-#endif //HANDLE_REQUESTS_H
+void *handle_requests(void *arg);

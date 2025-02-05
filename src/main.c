@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PORT 8080
+#define CLIENT_PORT 8080
+// #define STARTER_PORT 8090
+// #define SERVER_PORT 9000
 
 static void setup_signal_handler(void);
 static void sigint_handler(int sig_num);
@@ -17,66 +19,164 @@ static volatile sig_atomic_t exit_flag = 0;    // NOLINT(cppcoreguidelines-avoid
 
 int main(void)
 {
-    int server_fd;
-    // int                opt;
-    socklen_t          server_manager_addr_len;
-    struct sockaddr_in server_manager_address;
-    pthread_t          server_listener_thread;
+    int client_fd;
+    // int starter_fd;
+    // int server_fd;
 
-    setup_socket(&server_fd);
-    setup_address(&server_manager_address, &server_manager_addr_len, PORT);
+    socklen_t          client_addr_len;
+    struct sockaddr_in client_address;
+    pthread_t          client_listener_thread;
 
-    // opt = 1;
-    // setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    // socklen_t          starter_addr_len;
+    // struct sockaddr_in starter_address;
+    // pthread_t          starter_listener_thread;
 
-    if(bind(server_fd, (struct sockaddr *)&server_manager_address, server_manager_addr_len) != 0)
+    // socklen_t          server_addr_len;
+    // struct sockaddr_in server_address;
+    // pthread_t          server_listener_thread;
+
+    setup_socket(&client_fd);
+    setup_address(&client_address, &client_addr_len,CLIENT_PORT);
+
+    // setup_socket(&starter_fd);
+    // setup_address(&starter_address, &starter_addr_len,SERVER_PORT);
+
+    // setup_socket(&server_fd);
+    // setup_address(&server_address, &server_addr_len,SERVER_PORT);
+
+    if(bind(client_fd, (struct sockaddr *)&client_address, client_addr_len) != 0)
     {
-        perror("Bind failed");
-        close(server_fd);
+        perror("Client bind failed");
+        printf("Error: %d\n", errno);
+        close(client_fd);
         return EXIT_FAILURE;
     }
 
-    if(listen(server_fd, SOMAXCONN) != 0)
+    if(listen(client_fd, SOMAXCONN) != 0)
     {
         perror("Listen failed");
         printf("Error code: %d\n", errno);
-        close(server_fd);
+        close(client_fd);
         return EXIT_FAILURE;
     }
+
+    // if(bind(starter_fd, (struct sockaddr *)&starter_address, starter_addr_len) != 0)
+    // {
+    //     perror("Starter bind failed");
+    //     printf("Error: %d\n", errno);
+    //     close(starter_fd);
+    //     return EXIT_FAILURE;
+    // }
+    //
+    // if(listen(starter_fd, SOMAXCONN) != 0)
+    // {
+    //     perror("Starter listen failed");
+    //     printf("Error code: %d\n", errno);
+    //     close(starter_fd);
+    //     return EXIT_FAILURE;
+    // }
+
+    // if(bind(server_fd, (struct sockaddr *)&server_address, server_addr_len) != 0)
+    // {
+    //     perror("Server bind failed");
+    //     printf("Error: %d\n", errno);
+    //     close(server_fd);
+    //     return EXIT_FAILURE;
+    // }
+    //
+    // if(listen(server_fd, SOMAXCONN) != 0)
+    // {
+    //     perror("Server listen failed");
+    //     printf("Error code: %d\n", errno);
+    //     close(server_fd);
+    //     return EXIT_FAILURE;
+    // }
 
     setup_signal_handler();
 
     while(!exit_flag)
     {
-        int *client_fd_ptr;
-        int  client_fd;
+        int *client_requests_fd_ptr;
+        int  client_requests_fd;
 
-        client_fd_ptr = (int *)malloc(sizeof(int));
-        client_fd     = accept(server_fd, (struct sockaddr *)&server_manager_address, &server_manager_addr_len);
+        // int *ss_fd_ptr;
+        // int  ss_fd;
 
-        if(client_fd < 0)
+        // int *running_server_fd_ptr;
+        // int running_server_fd;
+
+        client_requests_fd_ptr = (int *)malloc(sizeof(int));
+        client_requests_fd     = accept(client_fd, (struct sockaddr *)&client_address, &client_addr_len);
+
+        // ss_fd_ptr     = (int *)malloc(sizeof(int));
+        // ss_fd = accept(starter_fd, (struct sockaddr *)&starter_address, &starter_addr_len);
+
+        // running_server_fd_ptr = (int *)malloc(sizeof(int));
+        // running_server_fd = accept(server_fd, (struct sockaddr *)&server_address, &server_addr_len);
+
+        if(client_requests_fd < 0)
         {
             if(exit_flag)
             {
-                free(client_fd_ptr);
+                free(client_requests_fd_ptr);
                 break;
             }
             perror("Client accept failed");
-            free(client_fd_ptr);
+            free(client_requests_fd_ptr);
             continue;
         }
 
-        *client_fd_ptr = client_fd;
+        // if(ss_fd < 0)
+        // {
+        //     if(exit_flag)
+        //     {
+        //         free(ss_fd_ptr);
+        //         break;
+        //     }
+        //     perror("Server starter accept failed");
+        //     free(ss_fd_ptr);
+        //     continue;
+        // }
 
-        if(pthread_create(&server_listener_thread, NULL, handle_client, (void *)client_fd_ptr) != 0)
+        // if(running_server_fd < 0)
+        // {
+        //     if(exit_flag)
+        //     {
+        //         free(running_server_fd_ptr);
+        //         break;
+        //     }
+        //     perror("Client accept failed");
+        //     free(running_server_fd_ptr);
+        //     continue;
+        // }
+
+        *client_requests_fd_ptr = client_requests_fd;
+        // *ss_fd_ptr = server_fd;
+        // *running_server_fd_ptr = running_server_fd;
+
+        if(pthread_create(&client_listener_thread, NULL, handle_client, (void *)client_requests_fd_ptr) != 0)
         {
-            perror("pthread_create failed");
-            free(client_fd_ptr);
+            perror("Client requests thread creation failed");
+            free(client_requests_fd_ptr);
         }
 
-        pthread_detach(server_listener_thread);
+        // if(pthread_create(&starter_listener_thread, NULL, handle_starter, (void *)ss_fd_ptr) != 0)
+        // {
+        //     perror("Starter listener thread creation failed");
+        //     free(ss_fd_ptr);
+        // }
+
+        // if(pthread_create(&server_listener_thread, NULL, handle_server, (void *)running_server_fd_ptr) != 0)
+        // {
+        //     perror("Server listener thread creation failed");
+        //     free(client_requests_fd_ptr);
+        // }
+
+        pthread_detach(client_listener_thread);
+        // pthread_detach(starter_listener_thread);
+        // pthread_detach(server_listener_thread);
     }
-    close(server_fd);
+    close(client_fd);
     return 0;
 }
 
