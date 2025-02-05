@@ -4,12 +4,15 @@
 
 #include "../include/handle_client_requests.h"
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #define SERVER_MANAGER_RESPONSE_MAX_SIZE 16
 #define IP_STARTING_INDEX 5
 #define CLIENT_REQUEST_MAX_SIZE 2
 #define UTF8STRING_PROTOCOL 0x0C
+
+int randomZeroOrOne(void);
 
 void *handle_client(void *arg)
 {
@@ -27,7 +30,8 @@ void *handle_client(void *arg)
     client_fd = *(int *)arg;
     free(arg);
     // Some other helper function that checks if server is running and available.
-    server_is_live             = 1;
+    server_is_live = randomZeroOrOne();
+
     server_response_type       = 0x01;
     server_response_version    = 0x01;
     server_manager_response[0] = server_response_type;
@@ -75,11 +79,30 @@ void *handle_client(void *arg)
             return NULL;
         }
     }
-    // else
-    // {
-    //     server_manager_response[2] = 0x00
-    //     server_manager_response[4] = 0x00
-    // }
+    else
+    {
+        ssize_t bytes_sent;
+
+        server_manager_response[2] = 0x00;
+        server_manager_response[4] = 0x00;
+
+        bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
+
+        if(bytes_sent < 0)
+        {
+            perror("Failed to respond to client");
+            close(client_fd);
+            return NULL;
+        }
+    }
     close(client_fd);
     return NULL;
+}
+
+int randomZeroOrOne(void)
+{
+    int result;
+
+    result = rand() % 2;    // Generates either 0 or 1
+    return result;
 }
