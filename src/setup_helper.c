@@ -15,7 +15,6 @@ void setup_socket(int *fd)
         perror("Error during socket creation:\n");
         exit(EXIT_FAILURE);
     }
-    printf("Socket created\n");
 }
 
 void setup_address(struct sockaddr_in *address, socklen_t *address_len, in_port_t port)
@@ -27,6 +26,4 @@ void setup_address(struct sockaddr_in *address, socklen_t *address_len, in_port_
     address->sin_addr.s_addr = htonl(INADDR_ANY);
 
     *address_len = sizeof(*address);
-
-    printf("Address created\n");
 }
