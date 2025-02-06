@@ -19,7 +19,7 @@
 
 u_int16_t get_payload_length(uint8_t first, uint8_t second);
 
-void parse_response(int type, void *server_fd_ptr, uint16_t payload_length, int response_length);
+void parse_response(int type, int server_fd, uint16_t payload_length, int response_length);
 
 // void handle_diagnostics();
 
@@ -73,7 +73,7 @@ void *handle_server_response(void *arg)
 
     response_length = response_payload_length + RESPONSE_HEADER_SIZE;
 
-    parse_response(response_type, &server_fd, response_payload_length, response_length);
+    parse_response(response_type, server_fd, response_payload_length, response_length);
 
     close(server_fd);
     return NULL;
@@ -88,20 +88,31 @@ u_int16_t get_payload_length(u_int8_t first, u_int8_t second)
 
 void parse_response(int type, int server_fd, u_int16_t payload_length, int response_length)
 {
-    unsigned char response[RESPONSE_HEADER_SIZE];
-    // unsigned char payload[payload_length];
-    ssize_t bytes_read;
-    ssize_t bytes_to_read;
+    unsigned char  response[RESPONSE_HEADER_SIZE];
+    unsigned char *payload = malloc(payload_length);
+    ssize_t        bytes_read;
+    ssize_t        bytes_to_read;
+    int            starting_index;
 
-    bytes_to_read = payload_length + RESPONSE_HEADER_SIZE;
+    starting_index = response_length - payload_length;
+
+    bytes_to_read = response_length;
 
     bytes_read = read(server_fd, &response, (size_t)bytes_to_read);
 
-    if(bytes_read < 4)
-    {
-        printf("Error reading response payload %d.\n", response_length);
-        return;
-    }
+    printf("Received %d bytes\n", (int)bytes_read);
+    // if(bytes_read < 4)
+    // {
+    //     printf("Error reading response payload %d.\n", response_length);
+    //     return;
+    // }
 
     printf("Received response payload type %d:\n", type);
+
+    for(int i = 0; i < response_length; i++)
+    {
+        response[i + starting_index] = payload[i];
+    }
+
+    free(payload);
 }
