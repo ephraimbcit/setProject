@@ -5,4 +5,4 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *handle_server_responses(void *arg);
+void *handle_server_response(void *arg);
