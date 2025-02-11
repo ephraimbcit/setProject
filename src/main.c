@@ -114,6 +114,7 @@ int main(void)
         // {
         //     if(exit_flag)
         //     {
+        //         free(client_requests_fd_ptr);
         //         break;
         //     }
         //     perror("Client accept failed");

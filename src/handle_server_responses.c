@@ -8,15 +8,10 @@
 
 #define RESPONSE_HEADER_SIZE 4
 #define REQUIRED_PROTOCOL_VERSION 0x01
-// #define UTF8STRING_PROTOCOL 0x0C
-// #define USER_COUNT 0x0A
-// #define ACTIVE_USER_COUNT 0x0B
 #define RESPONSE_TYPE_INDEX 0
 #define RESPONSE_VERSION_INDEX 1
 #define RESPONSE_PAYLOAD_LENGTH_INDEX_1 2
 #define RESPONSE_PAYLOAD_LENGTH_INDEX_2 3
-// #define RESPONSE_PAYLOAD_TYPE_INDEX 0
-// #define RESPONSE_PAYLOAD_DATA_LENGTH_INDEX 1
 #define BIT_SHIFT_BIG_ENDIAN 8
 
 uint16_t get_payload_length(uint8_t first, uint8_t second);
@@ -51,7 +46,7 @@ void *handle_server_response(void *arg)
 
     bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 
-    if(bytes_recieved < 4)
+    if(bytes_recieved < RESPONSE_HEADER_SIZE)
     {
         printf("Error reading server response.\n");
         close(server_fd);
