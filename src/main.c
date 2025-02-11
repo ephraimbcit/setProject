@@ -104,7 +104,7 @@ int main(void)
         // }
 
         // *client_requests_fd_ptr = client_requests_fd;
-        // *ss_fd_ptr = server_fd;
+        // *ss_fd_ptr = ss_fd;
         // *running_server_fd_ptr = running_server_fd;
         //
         // if(pthread_create(&client_listener_thread, NULL, handle_client, (void *)client_requests_fd_ptr) != 0)

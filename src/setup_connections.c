@@ -13,6 +13,9 @@
 int setup_connections(int *fd, int type)
 {
     pthread_t connection_thread;
+    int connection_fd;
+
+
 
     return EXIT_SUCCESS;
 }
