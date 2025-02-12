@@ -100,92 +100,6 @@ int main(void)
         sleep(1);
     }
 
-    // {
-    // int *client_requests_fd_ptr;
-    // int  client_requests_fd;
-
-    // int *ss_fd_ptr;
-    // int  ss_fd;
-
-    // int *running_server_fd_ptr;
-    // int  running_server_fd;
-
-    // client_requests_fd = accept(client_fd, (struct sockaddr *)&client_address, &client_addr_len);
-    //
-    // client_requests_fd_ptr = (int *)malloc(sizeof(int));
-    //
-    // if(client_requests_fd < 0)
-    // {
-    //     if(exit_flag)
-    //     {
-    //         free(client_requests_fd_ptr);
-    //         break;
-    //     }
-    //     perror("Client accept failed");
-    //     continue;
-    // }
-
-    // running_server_fd = accept(server_fd, (struct sockaddr *)&server_address, &server_addr_len);
-    //
-    // running_server_fd_ptr = (int *)malloc(sizeof(int));
-    //
-    // if(running_server_fd < 0)
-    // {
-    //     if(exit_flag)
-    //     {
-    //         free(running_server_fd_ptr);
-    //         break;
-    //     }
-    //     perror("Client accept failed");
-    //     continue;
-    // }
-    //
-    // printf("Accepted connection on server_fd: %d\n", running_server_fd);
-
-    // ss_fd_ptr     = (int *)malloc(sizeof(int));
-    // ss_fd = accept(starter_fd, (struct sockaddr *)&starter_address, &starter_addr_len);
-
-    // if(ss_fd < 0)
-    // {
-    //     if(exit_flag)
-    //     {
-    //         free(ss_fd_ptr);
-    //         break;
-    //     }
-    //     perror("Server starter accept failed");
-    //     free(ss_fd_ptr);
-    //     continue;
-    // }
-
-    // *client_requests_fd_ptr = client_requests_fd;
-    // *ss_fd_ptr = ss_fd;
-    // *running_server_fd_ptr = running_server_fd;
-    //
-    // if(pthread_create(&client_connections_thread, NULL, handle_client, (void *)client_requests_fd_ptr) != 0)
-    // {
-    //     perror("Client requests thread creation failed");
-    //     close(client_requests_fd);
-    //     free(client_requests_fd_ptr);
-    // }
-
-    // if(pthread_create(&starter_listener_thread, NULL, handle_starter, (void *)ss_fd_ptr) != 0)
-    // {
-    //     perror("Starter listener thread creation failed");
-    //     free(ss_fd_ptr);
-    // }
-
-    // if(pthread_create(&server_listener_thread, NULL, handle_server_response, (void *)running_server_fd_ptr) != 0)
-    // {
-    //     perror("Server listener thread creation failed");
-    //     close(running_server_fd);
-    //     free(running_server_fd_ptr);
-    // }
-
-    // pthread_detach(starter_listener_thread);
-    // pthread_detach(server_listener_thread);
-    // pthread_detach(client_connections_thread);
-    // }
-    // close(starter_fd);
     close(server_fd);
     close(client_fd);
     return 0;
@@ -221,7 +135,7 @@ static void setup_signal_handler(void)
 
 static void sigint_handler(int sig_num)
 {
-    const char *shutdown_msg = "Server manager shutting down.\n";
+    const char *shutdown_msg = "\nServer manager shutting down.\n";
     exit_flag                = 1;
     write(1, shutdown_msg, strlen(shutdown_msg) + 1);
 }
