@@ -21,7 +21,7 @@
 
 int setup_listener(int *fd, int type)
 {
-    socklen_t          addr_len = 0;
+    socklen_t          addr_len = sizeof(struct sockaddr_in);
     struct sockaddr_in address;
 
     if(type == TYPE_STARTER)
