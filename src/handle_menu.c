@@ -4,8 +4,8 @@
 
 #include "handle_menu.h"
 
-
-int end_display(void) {
+int end_display(void)
+{
     endwin();
     return 1;
 }

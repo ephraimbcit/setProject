@@ -1,8 +1,8 @@
 #include "../include/handle_client_requests.h"
+#include "../include/handle_menu.h"
 #include "../include/setup_connections.h"
 #include "../include/setup_helper.h"
 #include "../include/setup_menu.h"
-#include "../include/handle_menu.h"
 #include <arpa/inet.h>
 #include <errno.h>
 #include <handle_server_responses.h>
@@ -39,9 +39,9 @@ int main(void)
     struct connection_info *client_connection_info;
     struct connection_info *server_connection_info;
 
-//---------------- start ncurses display.
-    // start_display();
-//----------------
+    //---------------- start ncurses display.
+    start_display();
+    //----------------
     // starter_listener_successful = setup_listener(&starter_fd, TYPE_STARTER);
     server_listener_successful = setup_listener(&server_fd, TYPE_SERVER);
     client_listener_successful = setup_listener(&client_fd, TYPE_CLIENT);
@@ -142,8 +142,8 @@ static void sigint_handler(int sig_num)
 {
     const char *shutdown_msg = "\nServer manager shutting down.\n";
     // End the ncurses display
-    // end_display();
-    exit_flag                = 1;
+    end_display();
+    exit_flag = 1;
     write(1, shutdown_msg, strlen(shutdown_msg) + 1);
 }
 

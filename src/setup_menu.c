@@ -3,7 +3,8 @@
 //
 #include "setup_menu.h"
 
-void start_display(void) {
+void start_display(void)
+{
     initscr();
     keypad(stdscr, TRUE);
     curs_set(0);
