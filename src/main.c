@@ -140,7 +140,7 @@ static void setup_signal_handler(void)
 
 static void sigint_handler(int sig_num)
 {
-    const char *shutdown_msg = "\nServer manager shutting down.\n";
+    const char *shutdown_msg = "Server manager shutting down.\n";
     // End the ncurses display
     end_display();
     exit_flag = 1;

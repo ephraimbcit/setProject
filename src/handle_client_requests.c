@@ -16,9 +16,13 @@
 #define PORT_STARTING_INDEX 18
 #define CLIENT_REQUEST_MAX_SIZE 2
 #define UTF8STRING_PROTOCOL 0x0C
-#define SERVER_LIVE_TRUE 1
+#define SERVER_LIVE 0
 #define PORT_SEQUENCE_INDEX 16
 #define PORT_LENGTH_INDEX 17
+#define NO_AVAILABLE_SERVER 0x00
+#define FIVE 5
+#define SIX 6
+#define NO_ACTIVE_RESPONSE_SIZE 7
 
 int randomZeroOrOne(void);
 
@@ -31,6 +35,7 @@ void *handle_client(void *arg)
     const unsigned char server_ip[SERVER_MANAGER_RESPONSE_MAX_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     const unsigned char server_port[SERVER_PORT_MAX_SIZE]           = {0x38, 0x30, 0x38, 0x30};
     unsigned char       server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
+    unsigned char       server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
     unsigned char       client_type;
     unsigned char       client_version;
     unsigned char       server_response_type;
@@ -39,15 +44,19 @@ void *handle_client(void *arg)
     client_fd = *(int *)arg;
     free(arg);
     // Some other helper function that checks if server is running and available.
-    server_is_live = SERVER_LIVE_TRUE;
+    server_is_live = SERVER_LIVE;
+    // server_is_live = randomZeroOrOne();
 
-    server_response_type               = MANAGER_RESPONSE_TYPE_RETURN_IP;
-    server_response_version            = VALID_RESPONSE_VERSION;
-    server_manager_response[0]         = server_response_type;
-    server_manager_response[1]         = server_response_version;
-    server_manager_response[3]         = UTF8STRING_PROTOCOL;
-    server_manager_response[PORT_SEQUENCE_INDEX]   = UTF8STRING_PROTOCOL;
-    server_manager_response[PORT_LENGTH_INDEX] = SERVER_PORT_LENGTH;
+    server_response_type                 = MANAGER_RESPONSE_TYPE_RETURN_IP;
+    server_response_version              = VALID_RESPONSE_VERSION;
+    server_manager_response[0]           = server_response_type;
+    server_manager_response[1]           = server_response_version;
+    server_manager_response[3]           = UTF8STRING_PROTOCOL;
+    server_manager_response_no_active[0] = server_response_type;
+    server_manager_response_no_active[1] = server_response_version;
+    server_manager_response_no_active[3]         = UTF8STRING_PROTOCOL;
+    server_manager_response[PORT_SEQUENCE_INDEX] = UTF8STRING_PROTOCOL;
+    server_manager_response[PORT_LENGTH_INDEX]   = SERVER_PORT_LENGTH;
 
     bytes_recieved = read(client_fd, client_request, 2);
 
@@ -99,10 +108,12 @@ void *handle_client(void *arg)
     {
         ssize_t bytes_sent;
 
-        server_manager_response[2] = 0x00;
-        server_manager_response[4] = 0x00;
+        server_manager_response_no_active[2]    = NO_AVAILABLE_SERVER;
+        server_manager_response_no_active[4]    = NO_AVAILABLE_SERVER;
+        server_manager_response_no_active[FIVE] = UTF8STRING_PROTOCOL;
+        server_manager_response_no_active[SIX]  = NO_AVAILABLE_SERVER;
 
-        bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
+        bytes_sent = send(client_fd, server_manager_response_no_active, sizeof(server_manager_response_no_active), 0);
 
         if(bytes_sent < 0)
         {
