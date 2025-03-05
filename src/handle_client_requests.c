@@ -47,13 +47,13 @@ void *handle_client(void *arg)
     server_is_live = SERVER_LIVE;
     // server_is_live = randomZeroOrOne();
 
-    server_response_type                 = MANAGER_RESPONSE_TYPE_RETURN_IP;
-    server_response_version              = VALID_RESPONSE_VERSION;
-    server_manager_response[0]           = server_response_type;
-    server_manager_response[1]           = server_response_version;
-    server_manager_response[3]           = UTF8STRING_PROTOCOL;
-    server_manager_response_no_active[0] = server_response_type;
-    server_manager_response_no_active[1] = server_response_version;
+    server_response_type                         = MANAGER_RESPONSE_TYPE_RETURN_IP;
+    server_response_version                      = VALID_RESPONSE_VERSION;
+    server_manager_response[0]                   = server_response_type;
+    server_manager_response[1]                   = server_response_version;
+    server_manager_response[3]                   = UTF8STRING_PROTOCOL;
+    server_manager_response_no_active[0]         = server_response_type;
+    server_manager_response_no_active[1]         = server_response_version;
     server_manager_response_no_active[3]         = UTF8STRING_PROTOCOL;
     server_manager_response[PORT_SEQUENCE_INDEX] = UTF8STRING_PROTOCOL;
     server_manager_response[PORT_LENGTH_INDEX]   = SERVER_PORT_LENGTH;

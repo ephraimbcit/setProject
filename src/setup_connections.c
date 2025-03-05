@@ -72,7 +72,6 @@ void *setup_connections(void *arg)
 
         if(type == TYPE_SERVER)
         {
-            printf("about to create server thread");
             if(pthread_create(&connection_thread, NULL, handle_server_response, (void *)connection_fd_ptr) != 0)
             {
                 perror("Could not create connection thread\n");
