@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define RESPONSE_HEADER_SIZE 4
-#define REQUIRED_PROTOCOL_VERSION 0x01
+#define REQUIRED_PROTOCOL_VERSION 0x02
 #define RESPONSE_TYPE_INDEX 0
 #define RESPONSE_VERSION_INDEX 1
 #define RESPONSE_PAYLOAD_LENGTH_INDEX_1 2
@@ -18,60 +18,95 @@ uint16_t get_payload_length(uint8_t first, uint8_t second);
 
 void parse_response(int type, int server_fd, uint16_t payload_length);
 
-// void handle_diagnostics();
-
-// void handle_();
-
-// void handle_manager_response();
-
-// void get_data_type();
+// void *handle_server_response(void *arg)
+// {
+//     int           server_fd;
+//     ssize_t       bytes_recieved;
+//     unsigned char response_header[RESPONSE_HEADER_SIZE];
+//     unsigned char response_type;
+//     uint8_t       response_version;
+//     uint16_t      response_payload_length;
+//     uint8_t       length_first_byte;
+//     uint8_t       length_second_byte;
 //
-// void get_data_length();
+//     server_fd = *(int *)arg;
+//     free(arg);
+//
+//     bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
+//
+//     if(bytes_recieved < RESPONSE_HEADER_SIZE)
+//     {
+//         printf("Error reading server response.\n");
+//         close(server_fd);
+//         return NULL;
+//     }
+//
+//     response_version = response_header[RESPONSE_VERSION_INDEX];
+//
+//     if(response_version != REQUIRED_PROTOCOL_VERSION)
+//     {
+//         printf("Server response version not supported\n");
+//         close(server_fd);
+//         return NULL;
+//     }
+//
+//     response_type = response_header[RESPONSE_TYPE_INDEX];
+//
+//     length_first_byte  = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_1];
+//     length_second_byte = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_2];
+//
+//     response_payload_length = get_payload_length(length_first_byte, length_second_byte);
+//
+//     parse_response(response_type, server_fd, response_payload_length);
+//
+//     return NULL;
+// }
 
 void *handle_server_response(void *arg)
 {
-    int           server_fd;
-    ssize_t       bytes_recieved;
-    unsigned char response_header[RESPONSE_HEADER_SIZE];
-    unsigned char response_type;
-    uint8_t       response_version;
-    uint16_t      response_payload_length;
-    uint8_t       length_first_byte;
-    uint8_t       length_second_byte;
+    int server_fd;
 
     server_fd = *(int *)arg;
     free(arg);
 
-    printf("handling server response:");
-
-    bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
-
-    if(bytes_recieved < RESPONSE_HEADER_SIZE)
+    while(1)
     {
-        printf("Error reading server response.\n");
-        close(server_fd);
-        return NULL;
+        ssize_t       bytes_recieved;
+        unsigned char response_header[RESPONSE_HEADER_SIZE];
+        unsigned char response_type;
+        uint8_t       response_version;
+        uint16_t      response_payload_length;
+        uint8_t       length_first_byte;
+        uint8_t       length_second_byte;
+        bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
+
+        if(bytes_recieved < RESPONSE_HEADER_SIZE)
+        {
+            printf("Error reading server response.\n");
+            close(server_fd);
+            return NULL;
+        }
+
+        response_version = response_header[RESPONSE_VERSION_INDEX];
+
+        if(response_version != REQUIRED_PROTOCOL_VERSION)
+        {
+            printf("Server response version not supported\n");
+            close(server_fd);
+            return NULL;
+        }
+
+        // THERE NEEDS TO BE SOME TYPE OF CHECK THAT WILL EXIT THIS LOOP.
+
+        response_type = response_header[RESPONSE_TYPE_INDEX];
+
+        length_first_byte  = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_1];
+        length_second_byte = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_2];
+
+        response_payload_length = get_payload_length(length_first_byte, length_second_byte);
+
+        parse_response(response_type, server_fd, response_payload_length);
     }
-
-    response_version = response_header[RESPONSE_VERSION_INDEX];
-
-    if(response_version != REQUIRED_PROTOCOL_VERSION)
-    {
-        printf("Server response version not supported\n");
-        close(server_fd);
-        return NULL;
-    }
-
-    response_type = response_header[RESPONSE_TYPE_INDEX];
-
-    length_first_byte  = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_1];
-    length_second_byte = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_2];
-
-    response_payload_length = get_payload_length(length_first_byte, length_second_byte);
-
-    parse_response(response_type, server_fd, response_payload_length);
-
-    return NULL;
 }
 
 uint16_t get_payload_length(uint8_t first, uint8_t second)
@@ -83,20 +118,21 @@ uint16_t get_payload_length(uint8_t first, uint8_t second)
 
 void parse_response(int type, int server_fd, uint16_t payload_length)
 {
-    unsigned char *payload = malloc(payload_length);
+    unsigned char *payload = malloc((size_t)payload_length);
     ssize_t        bytes_read;
     ssize_t        bytes_to_read;
+
     if(!payload)
     {
         printf("Failed to allocate memory for payload.\n");
         return;
     }
 
+    printf("Type: %d.\n", type);
+
     bytes_to_read = payload_length;
 
     bytes_read = read(server_fd, payload, (size_t)bytes_to_read);
-
-    printf("Received %d bytes\n", (int)bytes_read);
 
     if(bytes_read < payload_length)
     {
@@ -105,22 +141,12 @@ void parse_response(int type, int server_fd, uint16_t payload_length)
         return;
     }
 
-    // result = (int)payload[TEST_INDEX];
-
-    printf("Received response payload type %d:\n", type);
-    //
-    // printf("User count: %d\n", result);
-
-    printf("Received %d bytes\n", (int)bytes_read);
-    printf("Raw payload data:\n");
-
-    // Print each byte in hexadecimal format
     for(ssize_t i = 0; i < bytes_read; i++)
     {
-        printf("%02X ", payload[i]);    // Print each byte as a 2-digit hex value
+        printf("%d\n", payload[i]);
     }
-
-    printf("\n");    // Newline after all bytes are printed
 
     free(payload);
 }
+
+
