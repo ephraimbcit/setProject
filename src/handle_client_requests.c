@@ -7,10 +7,18 @@
 #include <time.h>
 #include <unistd.h>
 
-#define SERVER_MANAGER_RESPONSE_MAX_SIZE 16
+#define MANAGER_RESPONSE_TYPE_RETURN_IP 0x01
+#define VALID_RESPONSE_VERSION 0x01
+#define SERVER_MANAGER_RESPONSE_MAX_SIZE 22
 #define IP_STARTING_INDEX 5
+#define SERVER_PORT_MAX_SIZE 4
+#define SERVER_PORT_LENGTH 0x04
+#define PORT_STARTING_INDEX 18
 #define CLIENT_REQUEST_MAX_SIZE 2
 #define UTF8STRING_PROTOCOL 0x0C
+#define SERVER_LIVE_TRUE 1
+#define PORT_SEQUENCE_INDEX 16
+#define PORT_LENGTH_INDEX 17
 
 int randomZeroOrOne(void);
 
@@ -21,6 +29,7 @@ void *handle_client(void *arg)
     ssize_t             bytes_recieved;
     unsigned char       client_request[CLIENT_REQUEST_MAX_SIZE];
     const unsigned char server_ip[SERVER_MANAGER_RESPONSE_MAX_SIZE] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    const unsigned char server_port[SERVER_PORT_MAX_SIZE]           = {0x38, 0x30, 0x38, 0x30};
     unsigned char       server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
     unsigned char       client_type;
     unsigned char       client_version;
@@ -30,13 +39,15 @@ void *handle_client(void *arg)
     client_fd = *(int *)arg;
     free(arg);
     // Some other helper function that checks if server is running and available.
-    server_is_live = randomZeroOrOne();
+    server_is_live = SERVER_LIVE_TRUE;
 
-    server_response_type       = 0x01;
-    server_response_version    = 0x01;
-    server_manager_response[0] = server_response_type;
-    server_manager_response[1] = server_response_version;
-    server_manager_response[3] = UTF8STRING_PROTOCOL;
+    server_response_type               = MANAGER_RESPONSE_TYPE_RETURN_IP;
+    server_response_version            = VALID_RESPONSE_VERSION;
+    server_manager_response[0]         = server_response_type;
+    server_manager_response[1]         = server_response_version;
+    server_manager_response[3]         = UTF8STRING_PROTOCOL;
+    server_manager_response[PORT_SEQUENCE_INDEX]   = UTF8STRING_PROTOCOL;
+    server_manager_response[PORT_LENGTH_INDEX] = SERVER_PORT_LENGTH;
 
     bytes_recieved = read(client_fd, client_request, 2);
 
@@ -68,6 +79,11 @@ void *handle_client(void *arg)
         for(counter = IP_STARTING_INDEX; counter < SERVER_MANAGER_RESPONSE_MAX_SIZE; counter++)
         {
             server_manager_response[counter] = server_ip[counter - IP_STARTING_INDEX];
+        }
+
+        for(counter = PORT_STARTING_INDEX; counter < SERVER_MANAGER_RESPONSE_MAX_SIZE; counter++)
+        {
+            server_manager_response[counter] = server_port[counter - PORT_STARTING_INDEX];
         }
 
         bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
