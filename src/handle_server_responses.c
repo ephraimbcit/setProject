@@ -148,5 +148,3 @@ void parse_response(int type, int server_fd, uint16_t payload_length)
 
     free(payload);
 }
-
-
