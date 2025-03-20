@@ -36,6 +36,13 @@ void *setup_connections(void *arg)
 
     free(connection_info);
 
+    printf("pre setup connections loop\n");
+
+    pthread_mutex_lock(&starter_data->starter_mutex);
+    starter_data->starter_flag        = 0;
+    starter_data->server_running_flag = 0;
+    pthread_mutex_unlock(&starter_data->starter_mutex);
+
     while(!exit_flag)
     {
         int                     connection_fd;
@@ -54,6 +61,7 @@ void *setup_connections(void *arg)
         }
 
         new_connection_info = malloc(sizeof(struct connection_info));
+
         if(!new_connection_info)
         {
             perror("malloc failed");
@@ -64,6 +72,10 @@ void *setup_connections(void *arg)
         new_connection_info->fd           = connection_fd;
         new_connection_info->type         = type;
         new_connection_info->starter_data = starter_data;
+
+        printf("new connection info struct has assigned valued\n");
+
+        printf("connection type: %d\n", type);
 
         if(type == TYPE_CLIENT)
         {
@@ -79,13 +91,20 @@ void *setup_connections(void *arg)
 
         if(type == TYPE_SERVER)
         {
-            if(!starter_data->starter_flag)    // placeholder for starter_flag check   // only connect if there isn't already a server starter connected
+            int temp_flag;
+            pthread_mutex_lock(&starter_data->starter_mutex);
+            temp_flag = starter_data->starter_flag;
+            pthread_mutex_unlock(&starter_data->starter_mutex);
+
+            printf("starter flag: %d\n", temp_flag);
+
+            if(!temp_flag)    // placeholder for starter_flag check   // only connect if there isn't already a server starter connected
             {
                 // Lock mutex and change data in starter_info struct
                 pthread_mutex_lock(&starter_data->starter_mutex);
-                starter_data->starter_flag        = 1;
-                starter_data->server_running_flag = 1;
-                starter_data->starter_address     = address;
+                starter_data->starter_flag             = 1;
+                starter_data->server_running_flag      = 1;
+                starter_data->starter_address.sin_addr = (&address)->sin_addr;
                 pthread_mutex_unlock(&starter_data->starter_mutex);
 
                 if(pthread_create(&connection_thread, NULL, handle_server_response, (void *)new_connection_info) != 0)
@@ -101,6 +120,8 @@ void *setup_connections(void *arg)
                     pthread_mutex_unlock(&starter_data->starter_mutex);
                     continue;
                 }
+
+                printf("Server thread started properly\n");
             }
             else
             {

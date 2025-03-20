@@ -35,6 +35,7 @@ void *handle_server_response(void *arg)
     struct connection_info *server_info;
     struct starter_info    *starter_data;
     int                     server_fd;
+    char                    ip_str[INET_ADDRSTRLEN];
 
     server_info  = (struct connection_info *)arg;
     starter_data = server_info->starter_data;
@@ -48,6 +49,10 @@ void *handle_server_response(void *arg)
     pthread_mutex_lock(&starter_data->starter_mutex);
     starter_data->server_running_flag = 1;
     pthread_mutex_unlock(&starter_data->starter_mutex);
+
+    printf("Artificially started server\n");
+    inet_ntop(AF_INET, &starter_data->starter_address, ip_str, sizeof(ip_str));
+    printf("ip of connection: %s\n", ip_str);
 
     while(1)
     {
@@ -69,6 +74,8 @@ void *handle_server_response(void *arg)
         }
 
         response_version = response_header[RESPONSE_VERSION_INDEX];
+
+        printf("%d\n", response_version);
 
         if(response_version != REQUIRED_PROTOCOL_VERSION)
         {

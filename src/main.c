@@ -67,6 +67,7 @@ int main(void)
         free(starter_shared_data);
         return EXIT_FAILURE;
     }
+
     pthread_mutex_init(&starter_shared_data->starter_mutex, NULL);
 
     server_connection_info = malloc(sizeof(struct connection_info));
@@ -114,6 +115,8 @@ int main(void)
 
     pthread_detach(server_connections_thread);
     pthread_detach(client_connections_thread);
+
+    printf("test\n");
 
     while(!exit_flag)
     {

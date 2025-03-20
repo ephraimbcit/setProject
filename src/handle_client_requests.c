@@ -11,10 +11,10 @@
 #include <unistd.h>
 
 #define CLIENT_REQUEST_MAX_SIZE 2
-#define SERVER_MANAGER_RESPONSE_MAX_SIZE 23
+#define SERVER_MANAGER_RESPONSE_MAX_SIZE 26
 #define NO_ACTIVE_RESPONSE_SIZE 3
 
-#define SERVER_PORT 8080
+#define SERVER_PORT "8080"
 
 #define MANAGER_RESPONSE_TYPE_RETURN_IP 0x01
 #define VALID_RESPONSE_VERSION 0x03
@@ -34,7 +34,7 @@
 
 #define PORT_LENGTH 4
 #define PORT_LENGTH_BYTE 0x04
-#define PORT_ASCII_SIZE 5
+// #define PORT_ASCII_SIZE 5
 
 #define IP_STARTING_INDEX 5
 
@@ -55,6 +55,8 @@ void *handle_client(void *arg)
     unsigned char           server_response_type;
     unsigned char           server_response_version;
     char                    ip_buffer[INET_ADDRSTRLEN];
+
+    memset(server_manager_response, 0, SERVER_MANAGER_RESPONSE_MAX_SIZE);
 
     client_info  = (struct connection_info *)arg;
     starter_data = client_info->starter_data;
@@ -101,39 +103,53 @@ void *handle_client(void *arg)
 
     if(server_is_live)
     {
+        uint8_t      *ptr;
         int           ip_length;
         unsigned char ip_length_byte;
-        int           counter;
-        ssize_t       bytes_sent;
-        int           port_type_payload_index;
-        int           port_length_payload_index;
-        int           port_index;
-        char          port_ascii[PORT_ASCII_SIZE];
+        // int           counter;
+        ssize_t bytes_sent;
+        int     port_type_payload_index;
+        int     port_length_payload_index;
+        // int     port_index;
+        // char port_ascii[PORT_ASCII_SIZE];
+
+        ptr = server_manager_response;
+
+        ptr += 1 + 1 + 1 + 2;
 
         ip_length                 = (int)strlen(ip_buffer);
         ip_length_byte            = (unsigned char)ip_length;
-        port_type_payload_index   = IP_LENGTH_PAYLOAD_INDEX + ip_length;
+        port_type_payload_index   = IP_STARTING_INDEX + ip_length;
         port_length_payload_index = port_type_payload_index + 1;
-        port_index                = port_length_payload_index + 1;
+        // port_index                = port_length_payload_index + 1;
+
+        printf("ip len: %d\n", ip_length);
 
         // Set response type and protocol
         server_manager_response[SERVER_STATUS_INDEX]     = SERVER_ACTIVE;
         server_manager_response[IP_LENGTH_PAYLOAD_INDEX] = ip_length_byte;
 
         // ✅ Copy stored IP into the response (no direct access to `server_ip_str`)
-        for(counter = 0; counter < ip_length; counter++)
-        {
-            server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)ip_buffer[counter];
-        }
+        // for(counter = 0; counter < ip_length; counter++)
+        // {
+        //     server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)ip_buffer[counter];
+        // }
 
-        // ✅ Convert port to ASCII hex representation
-        snprintf(port_ascii, sizeof(port_ascii), "%04d", SERVER_PORT);
+        memcpy(ptr, ip_buffer, (unsigned long)ip_length);
+
+        ptr += ip_length;
+
+        *ptr++ = UTF8STRING_PROTOCOL;
+        *ptr++ = PORT_LENGTH_BYTE;
+
+        // // ✅ Convert port to ASCII hex representation
+        // snprintf(port_ascii, sizeof(port_ascii), "%04d", SERVER_PORT);
 
         server_manager_response[port_type_payload_index]   = UTF8STRING_PROTOCOL;
         server_manager_response[port_length_payload_index] = PORT_LENGTH_BYTE;
 
         // ✅ Copy port ASCII representation
-        memcpy(&server_manager_response[port_index], port_ascii, PORT_LENGTH);
+        memcpy(ptr, &SERVER_PORT, PORT_LENGTH);
 
         // ✅ Send the response
         bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
