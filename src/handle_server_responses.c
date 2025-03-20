@@ -4,28 +4,50 @@
 
 #include "../include/handle_server_responses.h"
 #include "../include/setup_connections.h"
+#include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <unistd.h>
 
 #define RESPONSE_HEADER_SIZE 4
-#define REQUIRED_PROTOCOL_VERSION 0x02
+#define REQUIRED_PROTOCOL_VERSION 0x03
 #define RESPONSE_TYPE_INDEX 0
 #define RESPONSE_VERSION_INDEX 1
 #define RESPONSE_PAYLOAD_LENGTH_INDEX_1 2
 #define RESPONSE_PAYLOAD_LENGTH_INDEX_2 3
 #define BIT_SHIFT_BIG_ENDIAN 8
+#define SERVER_START_TYPE 0x14
+#define ZERO_PLACEHOLDER 0x00
+#define START_STOP_HEADER_SIZE 4
+#define START_STOP_TYPE_INDEX 0
+#define START_STOP_PAYLOAD_VERSION_INDEX 1
+#define START_STOP_PAYLOAD_INDEX_1 2
+#define START_STOP_PAYLOAD_INDEX_2 3
 
 uint16_t get_payload_length(uint8_t first, uint8_t second);
 
 void parse_response(int type, int server_fd, uint16_t payload_length);
 
+void send_server_start(int server_fd);
+
 void *handle_server_response(void *arg)
 {
-    int server_fd;
+    struct connection_info *server_info;
+    struct starter_info    *starter_data;
+    int                     server_fd;
 
-    server_fd = *(int *)arg;
+    server_info  = (struct connection_info *)arg;
+    starter_data = server_info->starter_data;
+    server_fd    = server_info->fd;
+
     free(arg);
+
+    // artificially make server run~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    send_server_start(server_fd);
+
+    pthread_mutex_lock(&starter_data->starter_mutex);
+    starter_data->server_running_flag = 1;
+    pthread_mutex_unlock(&starter_data->starter_mutex);
 
     while(1)
     {
@@ -36,8 +58,6 @@ void *handle_server_response(void *arg)
         uint16_t      response_payload_length;
         uint8_t       length_first_byte;
         uint8_t       length_second_byte;
-
-        // artificially make server run~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 
@@ -70,6 +90,25 @@ void *handle_server_response(void *arg)
     }
 
     return NULL;
+}
+
+void send_server_start(int server_fd)
+{
+    ssize_t       bytes_sent;
+    unsigned char server_start_message[START_STOP_HEADER_SIZE];
+
+    server_start_message[START_STOP_TYPE_INDEX]            = SERVER_START_TYPE;
+    server_start_message[START_STOP_PAYLOAD_VERSION_INDEX] = REQUIRED_PROTOCOL_VERSION;
+    server_start_message[START_STOP_PAYLOAD_INDEX_1]       = ZERO_PLACEHOLDER;
+    server_start_message[START_STOP_PAYLOAD_INDEX_2]       = ZERO_PLACEHOLDER;
+
+    bytes_sent = send(server_fd, server_start_message, sizeof(server_start_message), 0);
+
+    if(bytes_sent < START_STOP_HEADER_SIZE)
+    {
+        printf("Error writing server start.\n");
+        close(server_fd);
+    }
 }
 
 uint16_t get_payload_length(uint8_t first, uint8_t second)
