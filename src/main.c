@@ -1,5 +1,6 @@
 #include "../include/handle_client_requests.h"
 #include "../include/handle_menu.h"
+#include "../include/server_flag.h"
 #include "../include/setup_connections.h"
 #include "../include/setup_helper.h"
 #include "../include/setup_menu.h"
