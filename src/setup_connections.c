@@ -13,12 +13,11 @@
 #define TYPE_SERVER 1
 #define TYPE_CLIENT 2
 
-
-#include "../include/setup_connections.h"
 #include "../include/handle_client_requests.h"
 #include "../include/handle_server_responses.h"
 #include "../include/server_flag.h"
 #include "../include/server_ip.h"
+#include "../include/setup_connections.h"
 
 _Atomic(int) server_running_flag = 0;
 
@@ -78,14 +77,15 @@ void *setup_connections(void *arg)
                 free(connection_fd_ptr);
                 continue;
             }
-        } else
+        }
+        else
         {
             free(connection_fd_ptr);
         }
 
         if(type == TYPE_SERVER)
         {
-            if (atomic_exchange(&server_flag, 1) == 0)  // ✅ Atomic check & set
+            if(atomic_exchange(&server_flag, 1) == 0)    // ✅ Atomic check & set
             {
                 update_server_ip(&address);
 
@@ -98,11 +98,13 @@ void *setup_connections(void *arg)
                     atomic_store(&server_flag, 0);
                     continue;
                 }
-            } else
+            }
+            else
             {
                 free(connection_fd_ptr);
             }
-        } else
+        }
+        else
         {
             free(connection_fd_ptr);
         }
@@ -112,7 +114,8 @@ void *setup_connections(void *arg)
     pthread_exit(NULL);
 }
 
-void update_server_ip(struct sockaddr_in *server_addr) {
+void update_server_ip(struct sockaddr_in *server_addr)
+{
     pthread_mutex_lock(&server_ip_mutex);
 
     inet_ntop(AF_INET, &(server_addr->sin_addr), server_ip_str, INET_ADDRSTRLEN);
@@ -121,4 +124,3 @@ void update_server_ip(struct sockaddr_in *server_addr) {
 
     pthread_mutex_unlock(&server_ip_mutex);
 }
-

@@ -11,7 +11,6 @@
 #include <time.h>
 #include <unistd.h>
 
-
 #define CLIENT_REQUEST_MAX_SIZE 2
 #define SERVER_MANAGER_RESPONSE_MAX_SIZE 23
 #define NO_ACTIVE_RESPONSE_SIZE 3
@@ -44,38 +43,36 @@
 #define UTF8STRING_PROTOCOL 0x0C
 #define NO_AVAILABLE_SERVER 0x00
 
-
-
 int randomZeroOrOne(void);
 
 void *handle_client(void *arg)
 {
-    int                 client_fd;
-    int                 server_is_live;
-    ssize_t             bytes_recieved;
-    unsigned char       client_request[CLIENT_REQUEST_MAX_SIZE];
-    unsigned char       server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
-    unsigned char       server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
-    unsigned char       client_type;
-    unsigned char       client_version;
-    unsigned char       server_response_type;
-    unsigned char       server_response_version;
+    int           client_fd;
+    int           server_is_live;
+    ssize_t       bytes_recieved;
+    unsigned char client_request[CLIENT_REQUEST_MAX_SIZE];
+    unsigned char server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
+    unsigned char server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
+    unsigned char client_type;
+    unsigned char client_version;
+    unsigned char server_response_type;
+    unsigned char server_response_version;
 
     client_fd = *(int *)arg;
     free(arg);
     // Read flag for an active server
     server_is_live = atomic_load(&server_running_flag);
 
-    server_response_type                         = MANAGER_RESPONSE_TYPE_RETURN_IP;
-    server_response_version                      = VALID_RESPONSE_VERSION;
+    server_response_type    = MANAGER_RESPONSE_TYPE_RETURN_IP;
+    server_response_version = VALID_RESPONSE_VERSION;
 
-    server_manager_response[MANAGER_RESPONSE_TYPE_INDEX]                   = server_response_type;
-    server_manager_response[MANAGER_RESPONSE_VERSION_INDEX]                   = server_response_version;
+    server_manager_response[MANAGER_RESPONSE_TYPE_INDEX]    = server_response_type;
+    server_manager_response[MANAGER_RESPONSE_VERSION_INDEX] = server_response_version;
 
-    server_manager_response_no_active[MANAGER_RESPONSE_TYPE_INDEX]         = server_response_type;
-    server_manager_response_no_active[MANAGER_RESPONSE_VERSION_INDEX]         = server_response_version;
+    server_manager_response_no_active[MANAGER_RESPONSE_TYPE_INDEX]    = server_response_type;
+    server_manager_response_no_active[MANAGER_RESPONSE_VERSION_INDEX] = server_response_version;
 
-    server_manager_response[PAYLOAD_TYPE_INDEX]                   = UTF8STRING_PROTOCOL;
+    server_manager_response[PAYLOAD_TYPE_INDEX] = UTF8STRING_PROTOCOL;
 
     bytes_recieved = read(client_fd, client_request, 2);
 
@@ -96,38 +93,38 @@ void *handle_client(void *arg)
         return NULL;
     }
 
-    if (server_is_live)
+    if(server_is_live)
     {
-        int ip_length;
+        int           ip_length;
         unsigned char ip_length_byte;
-        int     counter;
-        ssize_t bytes_sent;
-        int port_type_payload_index;
-        int port_length_payload_index;
-        int port_index;
-        char port_ascii[PORT_ASCII_SIZE];
+        int           counter;
+        ssize_t       bytes_sent;
+        int           port_type_payload_index;
+        int           port_length_payload_index;
+        int           port_index;
+        char          port_ascii[PORT_ASCII_SIZE];
 
-        ip_length = atomic_load(&server_ip_length);
-        ip_length_byte = ip_length;
-        port_type_payload_index = IP_LENGTH_PAYLOAD_INDEX + ip_length;
+        ip_length                 = atomic_load(&server_ip_length);
+        ip_length_byte            = ip_length;
+        port_type_payload_index   = IP_LENGTH_PAYLOAD_INDEX + ip_length;
         port_length_payload_index = port_type_payload_index + 1;
-        port_index = port_length_payload_index + 1;
+        port_index                = port_length_payload_index + 1;
 
         // Set response type and protocol
-        server_manager_response[SERVER_STATUS_INDEX] = SERVER_ACTIVE;  // Example response type
+        server_manager_response[SERVER_STATUS_INDEX]     = SERVER_ACTIVE;    // Example response type
         server_manager_response[IP_LENGTH_PAYLOAD_INDEX] = ip_length_byte;
 
-        pthread_mutex_lock(&server_ip_mutex);  // ✅ Lock to safely read the stored ASCII IP
+        pthread_mutex_lock(&server_ip_mutex);    // ✅ Lock to safely read the stored ASCII IP
 
         // Copy stored ASCII IP into the response
-        for (counter = 0; counter < server_ip_length; counter++)
+        for(counter = 0; counter < server_ip_length; counter++)
         {
             server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)server_ip_str[counter];
         }
 
-        pthread_mutex_unlock(&server_ip_mutex);  // ✅ Unlock after reading IP
+        pthread_mutex_unlock(&server_ip_mutex);    // ✅ Unlock after reading IP
 
-        server_manager_response[port_type_payload_index] = UTF8STRING_PROTOCOL;
+        server_manager_response[port_type_payload_index]   = UTF8STRING_PROTOCOL;
         server_manager_response[port_length_payload_index] = PORT_LENGTH_BYTE;
 
         snprintf(port_ascii, sizeof(port_ascii), "%04d", SERVER_PORT);
@@ -137,7 +134,7 @@ void *handle_client(void *arg)
         // Send the response
         bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
 
-        if (bytes_sent < 0)
+        if(bytes_sent < 0)
         {
             perror("Failed to respond to client");
             close(client_fd);
@@ -148,7 +145,7 @@ void *handle_client(void *arg)
     {
         ssize_t bytes_sent;
 
-        server_manager_response_no_active[2]    = NO_AVAILABLE_SERVER;
+        server_manager_response_no_active[2] = NO_AVAILABLE_SERVER;
 
         bytes_sent = send(client_fd, server_manager_response_no_active, sizeof(server_manager_response_no_active), 0);
 

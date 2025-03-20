@@ -2,11 +2,11 @@
 // Created by ephraim on 2/4/25.
 //
 
+#include "../include/handle_server_responses.h"
+#include "../include/server_running_flag.h"
 #include <stdatomic.h>
 #include <stdint.h>
 #include <unistd.h>
-#include "../include/handle_server_responses.h"
-#include "../include/server_running_flag.h"
 
 #define RESPONSE_HEADER_SIZE 4
 #define REQUIRED_PROTOCOL_VERSION 0x02
@@ -32,7 +32,7 @@ void *handle_server_response(void *arg)
 
     while(server_flag)
     {
-        //temporary set server_running_flag for testing purposes
+        // temporary set server_running_flag for testing purposes
         atomic_store(&server_running_flag, 1);
 
         ssize_t       bytes_recieved;
@@ -112,5 +112,3 @@ void parse_response(int type, int server_fd, uint16_t payload_length)
 
     free(payload);
 }
-
-

@@ -5,6 +5,7 @@
 #ifndef SERVER_IP_H
 #define SERVER_IP_H
 
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <stdint.h>
 
