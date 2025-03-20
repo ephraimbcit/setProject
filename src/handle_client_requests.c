@@ -39,9 +39,7 @@
 
 #define IP_STARTING_INDEX 5
 
-#define PORT_STARTING_INDEX 18
 #define UTF8STRING_PROTOCOL 0x0C
-#define NO_AVAILABLE_SERVER 0x00
 
 int randomZeroOrOne(void);
 
@@ -105,7 +103,7 @@ void *handle_client(void *arg)
         char          port_ascii[PORT_ASCII_SIZE];
 
         ip_length                 = atomic_load(&server_ip_length);
-        ip_length_byte            = ip_length;
+        ip_length_byte            = (unsigned char)ip_length;
         port_type_payload_index   = IP_LENGTH_PAYLOAD_INDEX + ip_length;
         port_length_payload_index = port_type_payload_index + 1;
         port_index                = port_length_payload_index + 1;
@@ -117,7 +115,7 @@ void *handle_client(void *arg)
         pthread_mutex_lock(&server_ip_mutex);    // ✅ Lock to safely read the stored ASCII IP
 
         // Copy stored ASCII IP into the response
-        for(counter = 0; counter < server_ip_length; counter++)
+        for(counter = 0; counter < ip_length; counter++)
         {
             server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)server_ip_str[counter];
         }
@@ -145,7 +143,7 @@ void *handle_client(void *arg)
     {
         ssize_t bytes_sent;
 
-        server_manager_response_no_active[2] = NO_AVAILABLE_SERVER;
+        server_manager_response_no_active[2] = SERVER_INACTIVE;
 
         bytes_sent = send(client_fd, server_manager_response_no_active, sizeof(server_manager_response_no_active), 0);
 
