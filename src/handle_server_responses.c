@@ -24,19 +24,19 @@ void *handle_server_response(void *arg)
 {
     int server_fd;
 
-    ssize_t       bytes_recieved;
-    unsigned char response_header[RESPONSE_HEADER_SIZE];
-    unsigned char response_type;
-    uint8_t       response_version;
-    uint16_t      response_payload_length;
-    uint8_t       length_first_byte;
-    uint8_t       length_second_byte;
-
     server_fd = *(int *)arg;
     free(arg);
 
     while(1)
     {
+        ssize_t       bytes_recieved;
+        unsigned char response_header[RESPONSE_HEADER_SIZE];
+        unsigned char response_type;
+        uint8_t       response_version;
+        uint16_t      response_payload_length;
+        uint8_t       length_first_byte;
+        uint8_t       length_second_byte;
+
         // artificially make server run~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);

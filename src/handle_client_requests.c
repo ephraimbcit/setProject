@@ -3,8 +3,9 @@
 //
 
 #include "../include/handle_client_requests.h"
-#include "../include/server_ip.h"
+#include "../include/handle_server_responses.h"
 #include "../include/setup_connections.h"
+#include <pthread.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -41,22 +42,32 @@
 
 void *handle_client(void *arg)
 {
-    int           client_fd;
-    int           server_is_live;
-    ssize_t       bytes_received;
-    unsigned char client_request[CLIENT_REQUEST_MAX_SIZE];
-    unsigned char server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
-    unsigned char server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
-    unsigned char client_type;
-    unsigned char client_version;
-    unsigned char server_response_type;
-    unsigned char server_response_version;
+    struct connection_info *client_info;
+    struct starter_info    *starter_data;
+    int                     client_fd;
+    int                     server_is_live;
+    ssize_t                 bytes_received;
+    unsigned char           client_request[CLIENT_REQUEST_MAX_SIZE];
+    unsigned char           server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
+    unsigned char           server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
+    unsigned char           client_type;
+    unsigned char           client_version;
+    unsigned char           server_response_type;
+    unsigned char           server_response_version;
+    char                    ip_buffer[INET_ADDRSTRLEN];
 
-    client_fd = *(int *)arg;
+    client_info  = (struct connection_info *)arg;
+    starter_data = client_info->starter_data;
+    client_fd    = client_info->fd;
     free(arg);
 
+    pthread_mutex_lock(&starter_data->starter_mutex);
+
     // ✅ Check if the server is running
-    server_is_live = 1;
+    server_is_live = starter_data->server_running_flag;
+    inet_ntop(AF_INET, &(starter_data->starter_address.sin_addr), ip_buffer, INET_ADDRSTRLEN);
+
+    pthread_mutex_unlock(&starter_data->starter_mutex);
 
     server_response_type    = MANAGER_RESPONSE_TYPE_RETURN_IP;
     server_response_version = VALID_RESPONSE_VERSION;
@@ -98,16 +109,12 @@ void *handle_client(void *arg)
         int           port_length_payload_index;
         int           port_index;
         char          port_ascii[PORT_ASCII_SIZE];
-        char          ip_buffer[INET_ADDRSTRLEN];
 
-        ip_length                 = get_server_ip_length();
+        ip_length                 = (int)strlen(ip_buffer);
         ip_length_byte            = (unsigned char)ip_length;
         port_type_payload_index   = IP_LENGTH_PAYLOAD_INDEX + ip_length;
         port_length_payload_index = port_type_payload_index + 1;
         port_index                = port_length_payload_index + 1;
-
-        // ✅ Get the stored IP safely
-        get_server_ip(ip_buffer, sizeof(ip_buffer));
 
         // Set response type and protocol
         server_manager_response[SERVER_STATUS_INDEX]     = SERVER_ACTIVE;
