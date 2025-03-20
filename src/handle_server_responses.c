@@ -38,7 +38,6 @@ void *handle_server_response(void *arg)
     while(1)
     {
         // artificially make server run~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        set_server_running(1);
 
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 

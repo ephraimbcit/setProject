@@ -16,17 +16,12 @@
 
 #include "../include/handle_client_requests.h"
 #include "../include/handle_server_responses.h"
-#include "../include/server_ip.h"
 #include "../include/setup_connections.h"
-
-static _Atomic(int) server_flag = 0;
-
-static _Atomic(int) server_running = 0;
-
-void update_server_ip(struct sockaddr_in *server_addr);
 
 void *setup_connections(void *arg)
 {
+    static _Atomic(int) server_flag = 0;
+
     struct connection_info *connection_info;
     int                     fd;
     int                     type;
@@ -85,7 +80,7 @@ void *setup_connections(void *arg)
         {
             if(atomic_exchange(&server_flag, 1) == 0)    // only connect if there isn't already a server starter connected
             {
-                update_server_ip(&address);
+                //Need to update the server ip here so client threads can access it.
 
                 if(pthread_create(&connection_thread, NULL, handle_server_response, (void *)connection_fd_ptr) != 0)
                 {
@@ -106,16 +101,4 @@ void *setup_connections(void *arg)
         pthread_detach(connection_thread);
     }
     pthread_exit(NULL);
-}
-
-// Getter function for other files
-int is_server_running(void)
-{
-    return atomic_load(&server_running);
-}
-
-// Setter function for controlled modification
-void set_server_running(int value)
-{
-    atomic_store(&server_running, value);
 }

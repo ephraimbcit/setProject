@@ -16,7 +16,3 @@ struct connection_info
 };
 
 void *setup_connections(void *arg);
-
-int is_server_running(void);
-
-void set_server_running(int value);

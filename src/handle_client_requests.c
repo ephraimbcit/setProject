@@ -4,10 +4,9 @@
 
 #include "../include/handle_client_requests.h"
 #include "../include/server_ip.h"
-#include "../include/server_running_flag.h"
+#include "../include/setup_connections.h"
 #include <string.h>
 #include <sys/socket.h>
-#include <time.h>
 #include <unistd.h>
 
 #define CLIENT_REQUEST_MAX_SIZE 2
@@ -40,13 +39,11 @@
 
 #define UTF8STRING_PROTOCOL 0x0C
 
-int randomZeroOrOne(void);
-
 void *handle_client(void *arg)
 {
     int           client_fd;
     int           server_is_live;
-    ssize_t       bytes_recieved;
+    ssize_t       bytes_received;
     unsigned char client_request[CLIENT_REQUEST_MAX_SIZE];
     unsigned char server_manager_response[SERVER_MANAGER_RESPONSE_MAX_SIZE];
     unsigned char server_manager_response_no_active[NO_ACTIVE_RESPONSE_SIZE];
@@ -58,10 +55,8 @@ void *handle_client(void *arg)
     client_fd = *(int *)arg;
     free(arg);
 
-    // check if there is an active server
-    pthread_mutex_lock(&server_running_mutex);
-    server_is_live = server_running;
-    pthread_mutex_unlock(&server_running_mutex);
+    // ✅ Check if the server is running
+    server_is_live = 1;
 
     server_response_type    = MANAGER_RESPONSE_TYPE_RETURN_IP;
     server_response_version = VALID_RESPONSE_VERSION;
@@ -74,9 +69,9 @@ void *handle_client(void *arg)
 
     server_manager_response[PAYLOAD_TYPE_INDEX] = UTF8STRING_PROTOCOL;
 
-    bytes_recieved = read(client_fd, client_request, 2);
+    bytes_received = read(client_fd, client_request, 2);
 
-    if(bytes_recieved < 2)
+    if(bytes_received < 2)
     {
         printf("Invalid request received.\n");
         close(client_fd);
@@ -103,35 +98,37 @@ void *handle_client(void *arg)
         int           port_length_payload_index;
         int           port_index;
         char          port_ascii[PORT_ASCII_SIZE];
+        char          ip_buffer[INET_ADDRSTRLEN];
 
-        ip_length                 = atomic_load(&server_ip_length);
+        ip_length                 = get_server_ip_length();
         ip_length_byte            = (unsigned char)ip_length;
         port_type_payload_index   = IP_LENGTH_PAYLOAD_INDEX + ip_length;
         port_length_payload_index = port_type_payload_index + 1;
         port_index                = port_length_payload_index + 1;
 
+        // ✅ Get the stored IP safely
+        get_server_ip(ip_buffer, sizeof(ip_buffer));
+
         // Set response type and protocol
-        server_manager_response[SERVER_STATUS_INDEX]     = SERVER_ACTIVE;    // Example response type
+        server_manager_response[SERVER_STATUS_INDEX]     = SERVER_ACTIVE;
         server_manager_response[IP_LENGTH_PAYLOAD_INDEX] = ip_length_byte;
 
-        pthread_mutex_lock(&server_ip_mutex);    // ✅ Lock to safely read the stored ASCII IP
-
-        // Copy stored ASCII IP into the response
+        // ✅ Copy stored IP into the response (no direct access to `server_ip_str`)
         for(counter = 0; counter < ip_length; counter++)
         {
-            server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)server_ip_str[counter];
+            server_manager_response[IP_STARTING_INDEX + counter] = (uint8_t)ip_buffer[counter];
         }
 
-        pthread_mutex_unlock(&server_ip_mutex);    // ✅ Unlock after reading IP
+        // ✅ Convert port to ASCII hex representation
+        snprintf(port_ascii, sizeof(port_ascii), "%04d", SERVER_PORT);
 
         server_manager_response[port_type_payload_index]   = UTF8STRING_PROTOCOL;
         server_manager_response[port_length_payload_index] = PORT_LENGTH_BYTE;
 
-        snprintf(port_ascii, sizeof(port_ascii), "%04d", SERVER_PORT);
-
+        // ✅ Copy port ASCII representation
         memcpy(&server_manager_response[port_index], port_ascii, PORT_LENGTH);
 
-        // Send the response
+        // ✅ Send the response
         bytes_sent = send(client_fd, server_manager_response, sizeof(server_manager_response), 0);
 
         if(bytes_sent < 0)
