@@ -17,6 +17,7 @@
 #include "../include/handle_server_responses.h"
 #include "../include/server_flag.h"
 #include "../include/server_ip.h"
+#include "../include/server_running_flag.h"
 #include "../include/setup_connections.h"
 
 _Atomic(int) server_running_flag = 0;
@@ -38,6 +39,8 @@ void *setup_connections(void *arg)
     type            = connection_info->type;
 
     free(connection_info);
+
+    initialize_server_ip();
 
     while(!exit_flag)
     {
@@ -120,7 +123,7 @@ void update_server_ip(struct sockaddr_in *server_addr)
 
     inet_ntop(AF_INET, &(server_addr->sin_addr), server_ip_str, INET_ADDRSTRLEN);
 
-    server_ip_length = strlen(server_ip_str);
+    atomic_store(&server_ip_length, strlen(server_ip_str));
 
     pthread_mutex_unlock(&server_ip_mutex);
 }
