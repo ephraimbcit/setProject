@@ -10,10 +10,9 @@
 #include <stdint.h>
 #include <stdatomic.h>
 
-extern pthread_mutex_t server_ip_mutex;
-extern char server_ip_str[INET_ADDRSTRLEN];
-extern _Atomic(uint8_t) server_ip_length;
-
 void initialize_server_ip(void);
+void get_server_ip(char *dest, size_t dest_size);
+void set_server_ip(const char *new_ip);
+uint8_t get_server_ip_length(void);
 
 #endif //SERVER_IP_H

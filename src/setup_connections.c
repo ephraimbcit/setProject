@@ -21,6 +21,8 @@
 
 static _Atomic(int) server_flag = 0;
 
+static _Atomic(int) server_running = 0;
+
 void update_server_ip(struct sockaddr_in *server_addr);
 
 void *setup_connections(void *arg)
@@ -105,6 +107,18 @@ void *setup_connections(void *arg)
     }
     pthread_exit(NULL);
 }
+
+// Getter function for other files
+int is_server_running(void)
+{
+    return atomic_load(&server_running);
+}
+
+// Setter function for controlled modification
+void set_server_running(int value)
+{
+    atomic_store(&server_running, value);
+};
 
 void update_server_ip(struct sockaddr_in *server_addr)
 {
