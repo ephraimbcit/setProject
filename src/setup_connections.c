@@ -84,7 +84,7 @@ void *setup_connections(void *arg)
 
         if(type == TYPE_SERVER)
         {
-            //Unlock server starter flag to check it
+            // Unlock server starter flag to check it
             pthread_mutex_lock(&server_starter_mutex);
             starter_connected = server_starter_connected;
             pthread_mutex_unlock(&server_starter_mutex);

@@ -7,7 +7,7 @@
 
 #include <pthread.h>
 
-pthread_mutex_t server_starter_mutex;
-int server_starter_connected = 0;
+extern pthread_mutex_t server_starter_mutex;
+extern int server_starter_connected;
 
 #endif //SERVER_FLAG_H
