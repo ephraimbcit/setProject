@@ -22,6 +22,8 @@ static void sigint_handler(int sig_num);
 
 volatile sig_atomic_t exit_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
+_Atomic(int) server_flag = 0;
+
 int main(void)
 {
     // int starter_fd;
