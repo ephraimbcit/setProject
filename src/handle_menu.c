@@ -5,17 +5,24 @@
 #include "handle_menu.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <setup_connections.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <time.h>
 
 // #define FIVE 5
+#define THREE 3
 // #define SIX 6
 // #define SEVEN 7
 // #define TEN 10
 // #define TWELVE 12
 // #define THIRTEEN 13
+#define HUNDRED 100
+#define MAX_IP 256
+#define PREFIX 192
+
 #define KEY_PRESSED_LINE 16
 #define FOURTEEN 14
 #define FIFTEEN 15
@@ -28,6 +35,8 @@
 #define MAX_USERS 31           // Max number of users
 
 #define SLEEP_LENGTH 50000000L
+
+static struct menu interface;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 int end_display(void)
 {
@@ -57,22 +66,27 @@ int end_display(void)
 void *handle_input(void *arg)
 {
     struct timespec sleep_time;
-    struct menu     interface;
-    char            time_buffer[TIME_BUFFER_SIZE];    // Buffer to store formatted time
-    int             current_selection = 1;
-    int             height_too_short  = 0;
-    time_t          last_update_time  = 0;
-    int             server_is_on      = 0;    // 1 is on, 0 is off
-    struct tm       time_info;
-    int             user_count = 0;
+    // struct menu     interface;
+
+    // int             height_too_short  = 0;
+    // time_t          last_update_time  = 0;
+
+    // int         user_count   = 0;
+    // const char *connected_ip = "192.0.0.70";
 
     (void)arg;
     sleep_time.tv_sec  = 0;
     sleep_time.tv_nsec = SLEEP_LENGTH;
 
     getmaxyx(stdscr, interface.window_height, interface.window_width);    // Get terminal size
-    interface.height = FOURTEEN;
-    interface.width  = interface.window_width;
+    interface.height                 = FOURTEEN;
+    interface.width                  = interface.window_width;
+    interface.current_selection      = 1;
+    interface.server_is_on           = 0;    // 1 is on, 0 is off
+    interface.last_updated_time      = 0;
+    interface.vertical_border_char   = '|';
+    interface.horizontal_border_char = '-';
+    interface.user_count             = 0;
 
     while(!exit_flag)    // Keep handling input until exit
     {
@@ -80,14 +94,7 @@ void *handle_input(void *arg)
         // int new_window_width;
         int ch = getch();
 
-        if(getmaxy(stdscr) < interface.height)
-        {
-            height_too_short = 1;
-        }
-        else if(height_too_short == 1)
-        {
-            height_too_short = 0;
-        }
+        // pthread_mutex_lock(&menu_mutex);
 
         if(ch != ERR)
         {
@@ -99,97 +106,165 @@ void *handle_input(void *arg)
                     break;
                 case KEY_UP:
                     // mvprintw(FIVE, 1, "Up key pressed!  ");
-                    if((current_selection - 1) != 0)
+                    if((interface.current_selection - 1) != 0)
                     {
-                        current_selection--;
+                        interface.current_selection--;
                     }
                     refresh();
                     break;
                 case KEY_DOWN:
                     // mvprintw(SIX, 1, "Down key pressed!");
-                    if((current_selection + 1) != FOURTEEN)
+                    if((interface.current_selection + 1) != FOURTEEN)
                     {
-                        current_selection++;
+                        interface.current_selection++;
                     }
                     refresh();
                     break;
                 case '\n':
                     // mvprintw(SIX, 1, "Down key pressed!");
-                    if(current_selection == STARTUP_BUTTON)
+                    if(interface.current_selection == STARTUP_BUTTON)
                     {
-                        server_is_on = 1;
+                        interface.server_is_on = 1;
                     }
-                    else if(current_selection == SHUTDOWN_BUTTON)
+                    else if(interface.current_selection == SHUTDOWN_BUTTON)
                     {
-                        server_is_on = 0;
+                        interface.server_is_on = 0;
                     }
                     refresh();
                     break;
                 case 'k':    // Get current time when 'k' is pressed
-                    if(server_is_on == 1)
+                    if(interface.server_is_on == 1)
                     {
-                        user_count       = rand() % MAX_USERS;
-                        last_update_time = time(NULL);
+                        interface.user_count        = rand() % MAX_USERS;
+                        interface.last_updated_time = time(NULL);
                     }
                     break;
                 case 'p':    // Get current time when 'k' is pressed
-                    server_is_on = !server_is_on;
+                    interface.server_is_on = !interface.server_is_on;
                     break;
                 default:
                     mvprintw(KEY_PRESSED_LINE, 1, "Pressed: %c ", ch);
                     refresh();
             }
         }
-        clear();
-        mvprintw(FIFTEEN, 1, "Current selection: %d ", current_selection);
-        for(int x = 0; x < interface.width; x++)
-        {
-            mvaddch(0, x, '-');
-            mvaddch(interface.height, x, '-');
-        }
-        for(int y = 0; y <= interface.height; y++)
-        {
-            if(y != interface.height && y != 0)
-            {
-                if(y == current_selection)
-                {
-                    attron(COLOR_PAIR(3));
-                }
-                mvaddch(y, 0, '|');
-                mvaddch(y, interface.width - 1, '|');
-                if(y == current_selection)
-                {
-                    attroff(COLOR_PAIR(3));    // Turn off highlight
-                }
-            }
-
-            attron(COLOR_PAIR(server_is_on ? 2 : 1));    // Green if ON, Red if OFF
-            mvprintw(IP_LINE, 1, "Server IP:  %s", "192.0.0.70");
-            attroff(COLOR_PAIR(server_is_on ? 2 : 1));                                                             // Turn off the color
-            mvprintw(SERVER_ALIVE_LINE, 1, "%s", server_is_on ? "Server is running" : "Server is not running");    // Change to take connection status check
-
-            if(last_update_time != 0 && server_is_on == 1)
-            {
-                localtime_r(&last_update_time, &time_info);
-                strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &time_info);    // Format as HH:MM:SS
-                mvprintw(USER_COUNT_LINE, 1, "%d users    last updated at %s", user_count, time_buffer);
-            }
-            else if(last_update_time != 0 && server_is_on == 0)
-            {
-                mvprintw(USER_COUNT_LINE, 1, "%d users    last updated at %s", user_count, time_buffer);
-            }
-            else
-            {
-                mvprintw(USER_COUNT_LINE, 1, "%d users    last updated at N/A", 0);
-            }
-            mvprintw(STARTUP_BUTTON, 1, "Start Server");
-
-            mvprintw(SHUTDOWN_BUTTON, 1, "Shutdown Server");
-        }
-
-        refresh();
+        // pthread_mutex_unlock(&menu_mutex);
+        handle_display();
         nanosleep(&sleep_time, NULL);    // sleep the display function for some time.
     }
 
     return NULL;
+}
+
+// void handle_display(const char *ip_address, int user_count, struct menu *interface)
+void handle_display(void)
+{
+    char      time_buffer[TIME_BUFFER_SIZE];    // Buffer to store formatted time
+    struct tm time_info;
+
+    // pthread_mutex_lock(&menu_mutex);
+
+    clear();
+    mvprintw(FIFTEEN, 1, "Current selection: %d ", interface.current_selection);
+
+    // Draw Borders
+    for(int x = 0; x < interface.width; x++)
+    {
+        mvaddch(0, x, interface.horizontal_border_char);
+        mvaddch(interface.height, x, interface.horizontal_border_char);
+    }
+    for(int y = 0; y <= interface.height; y++)
+    {
+        if(y != interface.height && y != 0)
+        {
+            if(y == interface.current_selection)
+            {
+                attron(COLOR_PAIR(3));
+            }
+            mvaddch(y, 0, interface.vertical_border_char);
+            mvaddch(y, interface.width - 1, interface.vertical_border_char);
+            if(y == interface.current_selection)
+            {
+                attroff(COLOR_PAIR(3));    // Turn off highlight
+            }
+        }
+
+        // Display IP Address
+        attron(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Green if ON, Red if OFF
+        mvprintw(IP_LINE, 1, "Server IP:  %s", interface.ip_address);
+        attroff(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Turn off color
+
+        // Server Status
+        mvprintw(SERVER_ALIVE_LINE, 1, "%s", interface.server_is_on ? "Server is running" : "Server is not running");
+
+        // Display Last Updated Time
+        if(interface.last_updated_time > 0)
+        {
+            localtime_r(&interface.last_updated_time, &time_info);
+            strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &time_info);    // Format as HH:MM:SS
+            mvprintw(USER_COUNT_LINE, 1, "%d users    last updated at %s", interface.user_count, time_buffer);
+        }
+        else
+        {
+            mvprintw(USER_COUNT_LINE, 1, "%d users    last updated at N/A", interface.user_count);
+        }
+
+        // Menu Options
+        mvprintw(STARTUP_BUTTON, 1, "Start Server");
+        mvprintw(SHUTDOWN_BUTTON, 1, "Shutdown Server");
+    }
+
+    // pthread_mutex_unlock(&menu_mutex);
+    refresh();
+}
+
+void update_info(const char *ip_address, int user_count)
+{
+    if(interface.server_is_on)
+    {
+        // pthread_mutex_lock(&menu_mutex);
+
+        // Store IP Address
+        strncpy(interface.ip_address, ip_address, INET_ADDRSTRLEN - 1);
+        interface.ip_address[INET_ADDRSTRLEN - 1] = '\0';    // Ensure null termination
+
+        // Store User Count
+        interface.user_count = user_count;
+
+        // Store Last Updated Time
+        interface.last_updated_time = time(NULL);    // Store raw timestamp
+
+        // pthread_mutex_unlock(&menu_mutex);
+    }
+}
+
+void *test_update_info(void *arg)
+{
+    // char random_ip[INET_ADDRSTRLEN];
+    const char static_ip[INET_ADDRSTRLEN] = "192.168.1.100";    // Static IP address
+
+    // srand((unsigned int)time(NULL));    // Fix: Explicit cast
+
+    (void)arg;
+    while(!exit_flag)
+    {
+        int sleep_time;
+        int random_user_count = rand() % HUNDRED;    // Generate random user count (0-99)
+
+        // generate_random_ip(random_ip, sizeof(random_ip));    // Generate random IP
+
+        // pthread_mutex_lock(&menu_mutex);
+        // update_info(random_ip, random_user_count);
+        update_info(static_ip, random_user_count);
+        // pthread_mutex_unlock(&menu_mutex);
+
+        sleep_time = THREE + rand() % THREE;    // Fix: Move declaration
+        sleep((unsigned int)sleep_time);        // Fix: Explicit cast
+    }
+
+    return NULL;
+}
+
+void generate_random_ip(char *buffer, size_t size)
+{
+    snprintf(buffer, size, "%d.%d.%d.%d", PREFIX, rand() % MAX_IP, rand() % MAX_IP, rand() % MAX_IP);
 }

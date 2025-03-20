@@ -35,7 +35,8 @@ int main(void)
     // pthread_t          starter_connections_thread;
     pthread_t server_connections_thread;
     pthread_t client_connections_thread;
-    pthread_t input_thread;    // Thread for handling menu inputs
+    pthread_t input_thread;               // Thread for handling menu inputs
+    pthread_t test_update_info_thread;    // Thread for handling menu inputs
 
     struct connection_info *client_connection_info;
     struct connection_info *server_connection_info;
@@ -104,11 +105,18 @@ int main(void)
         perror("Failed to create input thread");
         return EXIT_FAILURE;
     }
+
+    if(pthread_create(&test_update_info_thread, NULL, test_update_info, NULL) != 0)
+    {
+        perror("Failed to create update info test thread");
+        return EXIT_FAILURE;
+    }
     //
 
     pthread_detach(server_connections_thread);
     pthread_detach(client_connections_thread);
     pthread_detach(input_thread);
+    pthread_detach(test_update_info_thread);
 
     while(!exit_flag)
     {
