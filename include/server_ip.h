@@ -8,9 +8,10 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
 extern pthread_mutex_t server_ip_mutex;
 extern char server_ip_str[INET_ADDRSTRLEN];
-extern uint8_t server_ip_length;
+extern _Atomic(uint8_t) server_ip_length;
 
 #endif //SERVER_IP_H
