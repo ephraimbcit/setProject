@@ -3,6 +3,7 @@
 //
 
 #include "../include/handle_server_responses.h"
+#include "../include/server_flag.h"
 #include "../include/server_running_flag.h"
 #include <stdatomic.h>
 #include <stdint.h>
@@ -23,25 +24,26 @@ void parse_response(int type, int server_fd, uint16_t payload_length);
 void *handle_server_response(void *arg)
 {
     int server_fd;
-    int server_flag;
+    int server_listen_loop;
+
+    ssize_t       bytes_recieved;
+    unsigned char response_header[RESPONSE_HEADER_SIZE];
+    unsigned char response_type;
+    uint8_t       response_version;
+    uint16_t      response_payload_length;
+    uint8_t       length_first_byte;
+    uint8_t       length_second_byte;
 
     server_fd = *(int *)arg;
     free(arg);
 
-    server_flag = atomic_load(&server_flag);
+    server_listen_loop = atomic_load(&server_flag);
 
-    while(server_flag)
+    while(server_listen_loop)
     {
         // temporary set server_running_flag for testing purposes
         atomic_store(&server_running_flag, 1);
 
-        ssize_t       bytes_recieved;
-        unsigned char response_header[RESPONSE_HEADER_SIZE];
-        unsigned char response_type;
-        uint8_t       response_version;
-        uint16_t      response_payload_length;
-        uint8_t       length_first_byte;
-        uint8_t       length_second_byte;
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 
         if(bytes_recieved < RESPONSE_HEADER_SIZE)
@@ -71,6 +73,8 @@ void *handle_server_response(void *arg)
 
         parse_response(response_type, server_fd, response_payload_length);
     }
+
+    return NULL;
 }
 
 uint16_t get_payload_length(uint8_t first, uint8_t second)
