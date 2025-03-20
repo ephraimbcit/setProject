@@ -5,7 +5,6 @@
 #include "../include/handle_client_requests.h"
 #include "../include/server_ip.h"
 #include "../include/server_running_flag.h"
-#include <stdatomic.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -58,8 +57,11 @@ void *handle_client(void *arg)
 
     client_fd = *(int *)arg;
     free(arg);
-    // Read flag for an active server
-    server_is_live = atomic_load(&server_running_flag);
+
+    // check if there is an active server
+    pthread_mutex_lock(&server_running_mutex);
+    server_is_live = server_running;
+    pthread_mutex_unlock(&server_running_mutex);
 
     server_response_type    = MANAGER_RESPONSE_TYPE_RETURN_IP;
     server_response_version = VALID_RESPONSE_VERSION;

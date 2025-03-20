@@ -5,8 +5,9 @@
 #ifndef SERVER_RUNNING_FLAG_H
 #define SERVER_RUNNING_FLAG_H
 
-#include <stdatomic.h>
+#include <pthread.h>
 
-extern _Atomic(int) server_running_flag;
+extern pthread_mutex_t server_running_mutex;
+extern int server_running;
 
 #endif //SERVER_RUNNING_FLAG_H

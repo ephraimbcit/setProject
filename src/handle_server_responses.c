@@ -21,10 +21,12 @@ uint16_t get_payload_length(uint8_t first, uint8_t second);
 
 void parse_response(int type, int server_fd, uint16_t payload_length);
 
+void set_server_running_flag(int value);
+
 void *handle_server_response(void *arg)
 {
     int server_fd;
-    int server_listen_loop;
+    // int server_listen_loop;
 
     ssize_t       bytes_recieved;
     unsigned char response_header[RESPONSE_HEADER_SIZE];
@@ -37,12 +39,10 @@ void *handle_server_response(void *arg)
     server_fd = *(int *)arg;
     free(arg);
 
-    server_listen_loop = atomic_load(&server_flag);
-
-    while(server_listen_loop)
+    while(1)
     {
-        // temporary set server_running_flag for testing purposes
-        atomic_store(&server_running_flag, 1);
+        // artificially make server run
+        set_server_running_flag(1);
 
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 
@@ -75,6 +75,13 @@ void *handle_server_response(void *arg)
     }
 
     return NULL;
+}
+
+void set_server_running_flag(int value)
+{
+    pthread_mutex_lock(&server_running_mutex);
+    server_running = value;
+    pthread_mutex_unlock(&server_running_mutex);
 }
 
 uint16_t get_payload_length(uint8_t first, uint8_t second)
