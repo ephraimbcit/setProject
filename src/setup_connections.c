@@ -118,15 +118,4 @@ int is_server_running(void)
 void set_server_running(int value)
 {
     atomic_store(&server_running, value);
-};
-
-void update_server_ip(struct sockaddr_in *server_addr)
-{
-    pthread_mutex_lock(&server_ip_mutex);
-
-    inet_ntop(AF_INET, &(server_addr->sin_addr), server_ip_str, INET_ADDRSTRLEN);
-
-    atomic_store(&server_ip_length, strlen(server_ip_str));
-
-    pthread_mutex_unlock(&server_ip_mutex);
 }
