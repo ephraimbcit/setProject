@@ -5,8 +5,9 @@
 #ifndef SERVER_FLAG_H
 #define SERVER_FLAG_H
 
-#include <stdatomic.h>
+#include <pthread.h>
 
-extern _Atomic(int) server_flag;
+pthread_mutex_t server_starter_mutex;
+int server_starter_connected = 0;
 
 #endif //SERVER_FLAG_H

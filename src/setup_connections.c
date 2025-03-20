@@ -20,12 +20,14 @@
 #include "../include/server_running_flag.h"
 #include "../include/setup_connections.h"
 
-_Atomic(int) server_running_flag = 0;
+void set_starter_flag(int value);
 
 void update_server_ip(struct sockaddr_in *server_addr);
 
 void *setup_connections(void *arg)
 {
+    int starter_connected;
+
     struct connection_info *connection_info;
     int                     fd;
     int                     type;
@@ -39,8 +41,6 @@ void *setup_connections(void *arg)
     type            = connection_info->type;
 
     free(connection_info);
-
-    initialize_server_ip();
 
     while(!exit_flag)
     {
@@ -81,15 +81,18 @@ void *setup_connections(void *arg)
                 continue;
             }
         }
-        else
-        {
-            free(connection_fd_ptr);
-        }
 
         if(type == TYPE_SERVER)
         {
-            if(atomic_exchange(&server_flag, 1) == 0)    // ✅ Atomic check & set
+            //Unlock server starter flag to check it
+            pthread_mutex_lock(&server_starter_mutex);
+            starter_connected = server_starter_connected;
+            pthread_mutex_unlock(&server_starter_mutex);
+
+            if(!starter_connected)    // only connect if there isn't already a server starter connected
             {
+                set_starter_flag(1);
+
                 update_server_ip(&address);
 
                 if(pthread_create(&connection_thread, NULL, handle_server_response, (void *)connection_fd_ptr) != 0)
@@ -98,7 +101,7 @@ void *setup_connections(void *arg)
                     printf("Connection type: %d\n", type);
                     close(connection_fd);
                     free(connection_fd_ptr);
-                    atomic_store(&server_flag, 0);
+                    set_starter_flag(0);
                     continue;
                 }
             }
@@ -107,14 +110,17 @@ void *setup_connections(void *arg)
                 free(connection_fd_ptr);
             }
         }
-        else
-        {
-            free(connection_fd_ptr);
-        }
 
         pthread_detach(connection_thread);
     }
     pthread_exit(NULL);
+}
+
+void set_starter_flag(int value)
+{
+    pthread_mutex_lock(&server_starter_mutex);
+    server_starter_connected = value;
+    pthread_mutex_unlock(&server_starter_mutex);
 }
 
 void update_server_ip(struct sockaddr_in *server_addr)
