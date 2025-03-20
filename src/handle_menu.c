@@ -46,22 +46,6 @@ int end_display(void)
 
 // display IP address ,user count (last updated, recieved update), add a shutdown button and startup, message for when the server is alve or dead
 // void update_display(string ip_address,int user_count)
-// {
-// Based on the newest time the user_count was sent, update a time variable to display the last time it was updated
-//     struct sockaddr_in address;
-//     socklen_t          addr_len = sizeof(address);
-//     static int         row      = 1;
-//
-//     if(getpeername(server_fd, &address, &addr_len) == -1)
-//     {
-//         perror("getpeername failed");
-//         return;
-//     }
-//     mvprintw(row, 0, "Connected: %s:%d", inet_ntoa(address.sin_addr), htons(address.sin_port));
-//     row++;
-//
-//     refresh();
-// }
 
 void *handle_input(void *arg)
 {
