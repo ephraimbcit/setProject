@@ -1,27 +1,27 @@
-#include "../include/handle_client_requests.h"
 #include "../include/handle_menu.h"
+#include "../include/server_status_flags.h"
 #include "../include/setup_connections.h"
-#include "../include/setup_helper.h"
 #include "../include/setup_menu.h"
-#include <arpa/inet.h>
 #include <errno.h>
-#include <handle_server_responses.h>
 #include <pthread.h>
 #include <setup_listener.h>
 #include <signal.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// #define TYPE_STARTER 0
 #define TYPE_SERVER 1
 #define TYPE_CLIENT 2
 
 static void setup_signal_handler(void);
+
 static void sigint_handler(int sig_num);
 
 volatile sig_atomic_t exit_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+_Atomic(int) starter_connected_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+_Atomic(int) server_running_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 int main(void)
 {
@@ -36,15 +36,19 @@ int main(void)
 
     struct connection_info *client_connection_info;
     struct connection_info *server_connection_info;
-    struct starter_info    *starter_shared_data;
+    // struct starter_info    *starter_shared_data;
+
+    setup_signal_handler();
 
     //---------------- start ncurses display.
     start_display();
     //----------------
-    // starter_listener_successful = setup_listener(&starter_fd, TYPE_STARTER);
+
+    // Use helper function to set up listeners for client and server connections
     server_listener_successful = setup_listener(&server_fd, TYPE_SERVER);
     client_listener_successful = setup_listener(&client_fd, TYPE_CLIENT);
 
+    // Error handling for listener setups
     if(server_listener_successful == EXIT_FAILURE)
     {
         printf("Failed to setup server listener\n");
@@ -57,37 +61,35 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    setup_signal_handler();
+    // starter_shared_data = malloc(sizeof(struct starter_info));
+    //
+    // if(!starter_shared_data)
+    // {
+    //     perror("Memory allocation failed");
+    //     free(starter_shared_data);
+    //     return EXIT_FAILURE;
+    // }
 
-    starter_shared_data = malloc(sizeof(struct starter_info));
-
-    if(!starter_shared_data)
-    {
-        perror("Memory allocation failed");
-        free(starter_shared_data);
-        return EXIT_FAILURE;
-    }
-
-    pthread_mutex_init(&starter_shared_data->starter_mutex, NULL);
+    // pthread_mutex_init(&starter_shared_data->starter_mutex, NULL);
 
     server_connection_info = malloc(sizeof(struct connection_info));
 
     if(!server_connection_info)
     {
-        perror("Memory allocation failed for server info");
-        free(starter_shared_data);
+        perror("Failed to allocate memory for server_connection_info");
+        // free(starter_shared_data);
         return EXIT_FAILURE;
     }
 
-    server_connection_info->fd           = server_fd;
-    server_connection_info->type         = TYPE_SERVER;
-    server_connection_info->starter_data = starter_shared_data;
+    server_connection_info->fd   = server_fd;
+    server_connection_info->type = TYPE_SERVER;
+    // server_connection_info->starter_data = starter_shared_data;
 
     if(pthread_create(&server_connections_thread, NULL, setup_connections, (void *)server_connection_info) != 0)
     {
         perror("Failed to create server thread");
         free(server_connection_info);    // Free on failure
-        free(starter_shared_data);
+        // free(starter_shared_data);
         return EXIT_FAILURE;
     }
 
@@ -96,20 +98,20 @@ int main(void)
     if(!client_connection_info)
     {
         perror("Memory allocation failed for client info");
-        free(starter_shared_data);
+        // free(starter_shared_data);
         return EXIT_FAILURE;
     }
 
-    client_connection_info->fd           = client_fd;
-    client_connection_info->type         = TYPE_CLIENT;
-    client_connection_info->starter_data = starter_shared_data;
+    client_connection_info->fd   = client_fd;
+    client_connection_info->type = TYPE_CLIENT;
+    // client_connection_info->starter_data = starter_shared_data;
 
     // Create a thread for client connections
     if(pthread_create(&client_connections_thread, NULL, setup_connections, (void *)client_connection_info) != 0)
     {
         perror("Failed to create client thread");
         free(client_connection_info);    // Free on failure
-        free(starter_shared_data);
+        // free(starter_shared_data);
         return EXIT_FAILURE;
     }
 
@@ -125,10 +127,10 @@ int main(void)
 
     // Cleanup before exiting
     // Ensure all threads have stopped before freeing starter_shared_data
-    pthread_mutex_lock(&starter_shared_data->starter_mutex);
-    pthread_mutex_destroy(&starter_shared_data->starter_mutex);
-    pthread_mutex_unlock(&starter_shared_data->starter_mutex);
-    free(starter_shared_data);    // ✅ Free dynamically allocated memory
+    // pthread_mutex_lock(&starter_shared_data->starter_mutex);
+    // pthread_mutex_destroy(&starter_shared_data->starter_mutex);
+    // pthread_mutex_unlock(&starter_shared_data->starter_mutex);
+    // free(starter_shared_data);    // ✅ Free dynamically allocated memory
 
     close(server_fd);
     close(client_fd);

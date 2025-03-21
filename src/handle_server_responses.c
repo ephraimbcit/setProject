@@ -3,7 +3,9 @@
 //
 
 #include "../include/handle_server_responses.h"
+#include "../include/server_status_flags.h"
 #include "../include/setup_connections.h"
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
@@ -11,149 +13,239 @@
 
 #define RESPONSE_HEADER_SIZE 4
 #define REQUIRED_PROTOCOL_VERSION 0x03
-#define RESPONSE_TYPE_INDEX 0
-#define RESPONSE_VERSION_INDEX 1
-#define RESPONSE_PAYLOAD_LENGTH_INDEX_1 2
-#define RESPONSE_PAYLOAD_LENGTH_INDEX_2 3
-#define BIT_SHIFT_BIG_ENDIAN 8
+#define BIT_SHIFT_ONE_BYTES 8
+#define BIT_SHIFT_TWO_BYTES 16
+#define BIT_SHIFT_THREE_BYTES 24
+#define SERVER_USR_COUNT 0x0A
+#define SERVER_START 1
+#define SERVER_STOP 0
 #define SERVER_START_TYPE 0x14
+#define SERVER_STOP_TYPE 0x15
+#define SERVER_ONLINE 0x0C
+#define SERVER_OFFLINE 0x0D
 #define ZERO_PLACEHOLDER 0x00
 #define START_STOP_HEADER_SIZE 4
-#define START_STOP_TYPE_INDEX 0
-#define START_STOP_PAYLOAD_VERSION_INDEX 1
-#define START_STOP_PAYLOAD_INDEX_1 2
-#define START_STOP_PAYLOAD_INDEX_2 3
+#define ENUM_TYPE_INTEGER 0x02
+#define BIG_BUFFER 256
 
-uint16_t get_payload_length(uint8_t first, uint8_t second);
+void send_starter_message(int server_fd, int type);
 
-void parse_response(int type, int server_fd, uint16_t payload_length);
+void set_server_running_flag(int value);
 
-void send_server_start(int server_fd);
+void handle_server_status(int status);
+
+int get_payload_length(uint8_t high_byte, uint8_t low_byte);
+
+int get_payload_length_32(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
+
+void handle_server_diagnostics(int server_fd, int payload_length, int type);
 
 void *handle_server_response(void *arg)
 {
     struct connection_info *server_info;
-    struct starter_info    *starter_data;
-    int                     server_fd;
-    char                    ip_str[INET_ADDRSTRLEN];
 
-    server_info  = (struct connection_info *)arg;
-    starter_data = server_info->starter_data;
-    server_fd    = server_info->fd;
+    int server_fd;
+    int server_communication_flag;
 
-    free(arg);
+    // Set flag for listening loop.
+    server_communication_flag = 1;
 
-    // artificially make server run~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    send_server_start(server_fd);
+    server_info = (struct connection_info *)arg;
+    server_fd   = server_info->fd;
 
-    pthread_mutex_lock(&starter_data->starter_mutex);
-    starter_data->server_running_flag = 1;
-    pthread_mutex_unlock(&starter_data->starter_mutex);
+    free(server_info);
 
-    printf("Artificially started server\n");
-    inet_ntop(AF_INET, &starter_data->starter_address, ip_str, sizeof(ip_str));
-    printf("ip of connection: %s\n", ip_str);
+    // Send start message to server starter
+    send_starter_message(server_fd, SERVER_START);
 
-    while(1)
+    while(server_communication_flag)
     {
         ssize_t       bytes_recieved;
-        unsigned char response_header[RESPONSE_HEADER_SIZE];
+        uint8_t       response_header[RESPONSE_HEADER_SIZE];
+        uint8_t      *response_header_ptr;
         unsigned char response_type;
         uint8_t       response_version;
-        uint16_t      response_payload_length;
-        uint8_t       length_first_byte;
-        uint8_t       length_second_byte;
+        int           payload_length;
+        uint8_t       high_byte;
+        uint8_t       low_byte;
+
+        response_header_ptr = response_header;
 
         bytes_recieved = read(server_fd, response_header, RESPONSE_HEADER_SIZE);
 
         if(bytes_recieved < RESPONSE_HEADER_SIZE)
         {
-            printf("Error reading server response.\n");
+            perror("Error reading server response");
             close(server_fd);
-            return NULL;
+            server_communication_flag = 0;
         }
 
-        response_version = response_header[RESPONSE_VERSION_INDEX];
+        response_type = *response_header_ptr++;
 
-        printf("%d\n", response_version);
+        response_version = *response_header_ptr++;
 
         if(response_version != REQUIRED_PROTOCOL_VERSION)
         {
-            printf("Server response version not supported\n");
+            perror("Server response version not supported");
             close(server_fd);
-            return NULL;
+            server_communication_flag = 0;
         }
 
-        // THERE NEEDS TO BE SOME TYPE OF CHECK THAT WILL EXIT THIS LOOP.
+        high_byte = *response_header_ptr++;
+        low_byte  = *response_header_ptr;
 
-        response_type = response_header[RESPONSE_TYPE_INDEX];
+        payload_length = get_payload_length(high_byte, low_byte);
 
-        length_first_byte  = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_1];
-        length_second_byte = response_header[RESPONSE_PAYLOAD_LENGTH_INDEX_2];
+        if(response_type == SERVER_ONLINE)
+        {
+            handle_server_status(SERVER_ONLINE);
+        }
 
-        response_payload_length = get_payload_length(length_first_byte, length_second_byte);
+        if(response_type == SERVER_OFFLINE)
+        {
+            handle_server_status(SERVER_OFFLINE);
+        }
 
-        parse_response(response_type, server_fd, response_payload_length);
+        if(response_type == SERVER_USR_COUNT)
+        {
+            handle_server_diagnostics(server_fd, payload_length, SERVER_USR_COUNT);
+        }
     }
-
     return NULL;
 }
 
-void send_server_start(int server_fd)
+void send_starter_message(int server_fd, int type)
 {
-    ssize_t       bytes_sent;
-    unsigned char server_start_message[START_STOP_HEADER_SIZE];
+    uint8_t *server_start_ptr;
+    ssize_t  bytes_sent;
+    uint8_t  server_start_message[START_STOP_HEADER_SIZE];
 
-    server_start_message[START_STOP_TYPE_INDEX]            = SERVER_START_TYPE;
-    server_start_message[START_STOP_PAYLOAD_VERSION_INDEX] = REQUIRED_PROTOCOL_VERSION;
-    server_start_message[START_STOP_PAYLOAD_INDEX_1]       = ZERO_PLACEHOLDER;
-    server_start_message[START_STOP_PAYLOAD_INDEX_2]       = ZERO_PLACEHOLDER;
+    server_start_ptr = server_start_message;
+
+    if(type == SERVER_START)
+    {
+        *server_start_ptr++ = SERVER_START_TYPE;
+        *server_start_ptr++ = REQUIRED_PROTOCOL_VERSION;
+        *server_start_ptr++ = ZERO_PLACEHOLDER;
+        *server_start_ptr   = ZERO_PLACEHOLDER;
+    }
+
+    if(type == SERVER_STOP)
+    {
+        *server_start_ptr++ = SERVER_STOP_TYPE;
+        *server_start_ptr++ = REQUIRED_PROTOCOL_VERSION;
+        *server_start_ptr++ = ZERO_PLACEHOLDER;
+        *server_start_ptr   = ZERO_PLACEHOLDER;
+    }
 
     bytes_sent = send(server_fd, server_start_message, sizeof(server_start_message), 0);
 
     if(bytes_sent < START_STOP_HEADER_SIZE)
     {
-        printf("Error writing server start.\n");
+        perror("Failed to send server start message");
         close(server_fd);
     }
 }
 
-uint16_t get_payload_length(uint8_t first, uint8_t second)
+void set_server_running_flag(int value)
 {
-    uint16_t length;
-    length = (uint16_t)((first << BIT_SHIFT_BIG_ENDIAN) | second);
-    return length;
+    atomic_store(&server_running_flag, value);
+    if(!(atomic_load(&server_running_flag) == value))
+    {
+        perror("Failed to set server flag");
+    }
 }
 
-void parse_response(int type, int server_fd, uint16_t payload_length)
+void handle_server_status(int status)
 {
-    unsigned char *payload = malloc((size_t)payload_length);
-    ssize_t        bytes_read;
-    ssize_t        bytes_to_read;
-
-    if(!payload)
+    if(status == SERVER_START)
     {
-        printf("Failed to allocate memory for payload.\n");
-        return;
+        set_server_running_flag(1);
     }
 
-    printf("Type: %d.\n", type);
+    if(status == SERVER_STOP)
+    {
+        set_server_running_flag(0);
+    }
+}
 
-    bytes_to_read = payload_length;
+int get_payload_length(uint8_t high_byte, uint8_t low_byte)
+{
+    uint16_t combined;
+    uint16_t result;
+    int      network_value;
 
-    bytes_read = read(server_fd, payload, (size_t)bytes_to_read);
+    combined      = (uint16_t)(high_byte << BIT_SHIFT_ONE_BYTES) | low_byte;
+    result        = ntohs(combined);
+    network_value = (int)htons(result);
+
+    return network_value;
+}
+
+int get_payload_length_32(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
+{
+    uint32_t value;
+    uint32_t result;
+    // Combine the four bytes into a 32-bit integer assuming big-endian order:
+    value = ((uint32_t)b1 << BIT_SHIFT_THREE_BYTES) | ((uint32_t)b2 << BIT_SHIFT_TWO_BYTES) | ((uint32_t)b3 << BIT_SHIFT_ONE_BYTES) | b4;
+    // Optionally convert from network to host byte order:
+    result = ntohl(value);
+
+    return (int)result;
+}
+
+// void increment_ptr(int value, uint8_t *ptr)
+// {
+//     int counter;
+//
+//     for (counter = 0; counter < value; counter++)
+//     {
+//         ptr++;
+//     }
+// }
+
+void handle_server_diagnostics(int server_fd, int payload_length, int type)
+{
+    ssize_t  bytes_read;
+    uint8_t  buffer[BIG_BUFFER];
+    uint8_t *buffer_ptr;
+    uint8_t  user_count_type;
+    // uint8_t user_count_length;
+    uint8_t user_count_high_byte;
+    uint8_t user_count_low_byte;
+    int     user_count;
+
+    bytes_read = payload_length;
+
+    if(type == SERVER_USR_COUNT)
+    {
+        bytes_read = read(server_fd, buffer, (size_t)payload_length);
+    }
 
     if(bytes_read < payload_length)
     {
-        printf("Error reading response payload %d.\n", payload_length);
-        free(payload);
+        perror("Failed to read server diagnostics");
         return;
     }
 
-    for(ssize_t i = 0; i < bytes_read; i++)
+    buffer_ptr = buffer;
+
+    user_count_type = *buffer_ptr++;
+
+    if(!(user_count_type == ENUM_TYPE_INTEGER))
     {
-        printf("%d\n", payload[i]);
+        perror("User count payload type is not an integer");
+        return;
     }
 
-    free(payload);
+    // Increment to skip over payload length, this may need to be changed
+    buffer_ptr++;
+
+    user_count_high_byte = *buffer_ptr++;
+    user_count_low_byte  = *buffer_ptr;
+
+    // Using a helper function to get the user count since it uses the same logic
+    user_count = get_payload_length(user_count_high_byte, user_count_low_byte);
+
+    printf("User count: %d\n", user_count);
 }
