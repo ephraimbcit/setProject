@@ -11,11 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TYPE_STARTER 0
 #define TYPE_SERVER 1
 #define TYPE_CLIENT 2
 
-#define STARTER_PORT 8090
 #define SERVER_PORT 9000
 #define CLIENT_PORT 8080
 
@@ -23,12 +21,6 @@ int setup_listener(int *fd, int type)
 {
     socklen_t          addr_len = sizeof(struct sockaddr_in);
     struct sockaddr_in address;
-
-    if(type == TYPE_STARTER)
-    {
-        setup_socket(fd);
-        setup_address(&address, &addr_len, STARTER_PORT);
-    }
 
     if(type == TYPE_SERVER)
     {
