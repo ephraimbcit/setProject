@@ -32,7 +32,7 @@ void send_starter_message(int server_fd, int type);
 
 void set_server_running_flag(int value);
 
-void handle_server_status(int status);
+void handle_server_status(uint8_t status);
 
 int get_payload_length(uint8_t high_byte, uint8_t low_byte);
 
@@ -55,7 +55,8 @@ void *handle_server_response(void *arg)
 
     free(server_info);
 
-    // Send start message to server starter
+    // Send start message to server starter (temporary implementation)
+    // Will need to link this to one of Brandon's "start server" buttons to manually tell the starter to start a server.
     send_starter_message(server_fd, SERVER_START);
 
     while(server_communication_flag)
@@ -63,7 +64,7 @@ void *handle_server_response(void *arg)
         ssize_t       bytes_recieved;
         uint8_t       response_header[RESPONSE_HEADER_SIZE];
         uint8_t      *response_header_ptr;
-        unsigned char response_type;
+        uint8_t       response_type;
         uint8_t       response_version;
         int           payload_length;
         uint8_t       high_byte;
@@ -156,16 +157,16 @@ void set_server_running_flag(int value)
     }
 }
 
-void handle_server_status(int status)
+void handle_server_status(uint8_t status)
 {
-    if(status == SERVER_START)
+    if(status == SERVER_ONLINE)
     {
-        set_server_running_flag(1);
+        set_server_running_flag(SERVER_START);
     }
 
-    if(status == SERVER_STOP)
+    if(status == SERVER_OFFLINE)
     {
-        set_server_running_flag(0);
+        set_server_running_flag(SERVER_STOP);
     }
 }
 

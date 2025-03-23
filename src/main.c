@@ -100,8 +100,6 @@ int main(void)
     pthread_detach(server_connections_thread);
     pthread_detach(client_connections_thread);
 
-    printf("test\n");
-
     while(!exit_flag)
     {
         sleep(1);

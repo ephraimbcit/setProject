@@ -22,8 +22,8 @@ void *setup_connections(void *arg)
     struct connection_info *connection_info;
     int                     fd;
     int                     type;
-
     struct sockaddr_in address;
+
     socklen_t          addr_len          = sizeof(address);
     pthread_t          connection_thread = 0;
 
@@ -39,6 +39,7 @@ void *setup_connections(void *arg)
         struct connection_info *new_connection_info;
 
         connection_fd = accept(fd, (struct sockaddr *)&address, &addr_len);
+
         if(connection_fd < 0)
         {
             if(exit_flag)
@@ -91,7 +92,7 @@ void *setup_connections(void *arg)
             }
             else
             {
-                // Need to connection info struct here if a starter attempts to connect while one is alrady connected
+                // Need to connection info struct here if a starter attempts to connect while one is already connected
                 free(new_connection_info);
             }
         }
