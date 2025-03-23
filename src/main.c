@@ -40,7 +40,7 @@ int main(void)
     setup_signal_handler();
 
     //---------------- start ncurses display.
-    start_display();
+    // start_display();
     //----------------
 
     // Use helper function to set up listeners for client and server connections

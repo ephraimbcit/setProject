@@ -38,7 +38,7 @@ int get_payload_length(uint8_t high_byte, uint8_t low_byte);
 
 int get_payload_length_32(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4);
 
-void handle_server_diagnostics(int server_fd, int payload_length, int type);
+void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type);
 
 void *handle_server_response(void *arg)
 {
@@ -61,14 +61,14 @@ void *handle_server_response(void *arg)
 
     while(server_communication_flag)
     {
-        ssize_t       bytes_recieved;
-        uint8_t       response_header[RESPONSE_HEADER_SIZE];
-        uint8_t      *response_header_ptr;
-        uint8_t       response_type;
-        uint8_t       response_version;
-        int           payload_length;
-        uint8_t       high_byte;
-        uint8_t       low_byte;
+        ssize_t  bytes_recieved;
+        uint8_t  response_header[RESPONSE_HEADER_SIZE];
+        uint8_t *response_header_ptr;
+        uint8_t  response_type;
+        uint8_t  response_version;
+        int      payload_length;
+        uint8_t  high_byte;
+        uint8_t  low_byte;
 
         response_header_ptr = response_header;
 
@@ -76,6 +76,7 @@ void *handle_server_response(void *arg)
 
         if(bytes_recieved < RESPONSE_HEADER_SIZE)
         {
+            printf("Bytes received: %d\n", (int)bytes_recieved);
             perror("Error reading server response");
             close(server_fd);
             server_communication_flag = 0;
@@ -172,51 +173,39 @@ void handle_server_status(uint8_t status)
 
 int get_payload_length(uint8_t high_byte, uint8_t low_byte)
 {
-    uint16_t combined;
-    uint16_t result;
-    int      network_value;
+    uint16_t value;
 
-    combined      = (uint16_t)(high_byte << BIT_SHIFT_ONE_BYTES) | low_byte;
-    result        = ntohs(combined);
-    network_value = (int)htons(result);
+    value = (uint16_t)(high_byte << BIT_SHIFT_ONE_BYTES) | low_byte;
 
-    return network_value;
+    return (int)value;
 }
 
 int get_payload_length_32(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
 {
     uint32_t value;
-    uint32_t result;
     // Combine the four bytes into a 32-bit integer assuming big-endian order:
     value = ((uint32_t)b1 << BIT_SHIFT_THREE_BYTES) | ((uint32_t)b2 << BIT_SHIFT_TWO_BYTES) | ((uint32_t)b3 << BIT_SHIFT_ONE_BYTES) | b4;
-    // Optionally convert from network to host byte order:
-    result = ntohl(value);
 
-    return (int)result;
+    return (int)value;
 }
 
-// void increment_ptr(int value, uint8_t *ptr)
-// {
-//     int counter;
-//
-//     for (counter = 0; counter < value; counter++)
-//     {
-//         ptr++;
-//     }
-// }
-
-void handle_server_diagnostics(int server_fd, int payload_length, int type)
+void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
 {
     ssize_t  bytes_read;
     uint8_t  buffer[BIG_BUFFER];
     uint8_t *buffer_ptr;
     uint8_t  user_count_type;
-    // uint8_t user_count_length;
-    uint8_t user_count_high_byte;
-    uint8_t user_count_low_byte;
-    int     user_count;
+    uint8_t  user_count_high_byte;
+    uint8_t  user_count_low_byte;
+    int      user_count;
+    uint8_t  message_count_type;
+    uint8_t  message_count_b1;
+    uint8_t  message_count_b2;
+    uint8_t  message_count_b3;
+    uint8_t  message_count_b4;
+    int      message_count;
 
-    bytes_read = payload_length;
+    bytes_read = 0;
 
     if(type == SERVER_USR_COUNT)
     {
@@ -239,14 +228,35 @@ void handle_server_diagnostics(int server_fd, int payload_length, int type)
         return;
     }
 
-    // Increment to skip over payload length, this may need to be changed
+    // Increment to skip over user count payload length, this may need to be changed
     buffer_ptr++;
 
+    // This gets the two bytes that represent the user count
     user_count_high_byte = *buffer_ptr++;
-    user_count_low_byte  = *buffer_ptr;
+    user_count_low_byte  = *buffer_ptr++;
 
     // Using a helper function to get the user count since it uses the same logic
     user_count = get_payload_length(user_count_high_byte, user_count_low_byte);
 
-    printf("User count: %d\n", user_count);
+    fprintf(stderr, "User count: %d\n", user_count);
+
+    message_count_type = *buffer_ptr++;
+
+    if(!(message_count_type == ENUM_TYPE_INTEGER))
+    {
+        perror("Message count payload type is not an integer");
+        return;
+    }
+
+    // Increment to skip over message count payload length, this may need to be changed
+    buffer_ptr++;
+
+    message_count_b1 = *buffer_ptr++;
+    message_count_b2 = *buffer_ptr++;
+    message_count_b3 = *buffer_ptr++;
+    message_count_b4 = *buffer_ptr;
+
+    message_count = get_payload_length_32(message_count_b1, message_count_b2, message_count_b3, message_count_b4);
+
+    fprintf(stderr, "Message count: %d\n", message_count);
 }

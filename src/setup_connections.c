@@ -22,10 +22,10 @@ void *setup_connections(void *arg)
     struct connection_info *connection_info;
     int                     fd;
     int                     type;
-    struct sockaddr_in address;
+    struct sockaddr_in      address;
 
-    socklen_t          addr_len          = sizeof(address);
-    pthread_t          connection_thread = 0;
+    socklen_t addr_len          = sizeof(address);
+    pthread_t connection_thread = 0;
 
     connection_info = (struct connection_info *)arg;
     fd              = connection_info->fd;
