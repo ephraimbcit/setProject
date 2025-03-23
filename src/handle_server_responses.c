@@ -262,5 +262,4 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
     message_count = get_payload_length_32(message_count_b1, message_count_b2, message_count_b3, message_count_b4);
 
     fprintf(stderr, "Message count: %d\n", message_count);
-    fprintf(stderr, "server running? %d", atomic_load(&server_running_flag));
 }
