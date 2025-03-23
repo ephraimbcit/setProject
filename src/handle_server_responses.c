@@ -59,6 +59,9 @@ void *handle_server_response(void *arg)
     // Will need to link this to one of Brandon's "start server" buttons to manually tell the starter to start a server.
     send_starter_message(server_fd, SERVER_START);
 
+    // artificially simulate that the server says it's online
+    atomic_store(&server_running_flag, 1);
+
     while(server_communication_flag)
     {
         ssize_t  bytes_recieved;
@@ -259,4 +262,5 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
     message_count = get_payload_length_32(message_count_b1, message_count_b2, message_count_b3, message_count_b4);
 
     fprintf(stderr, "Message count: %d\n", message_count);
+    fprintf(stderr, "server running? %d", atomic_load(&server_running_flag));
 }

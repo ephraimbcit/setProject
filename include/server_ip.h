@@ -6,7 +6,7 @@
 #define SERVER_IP_H
 
 #include <pthread.h>
-#define INET_ADDRSTRLEN 16  // For example, for IPv4
+#include <arpa/inet.h>
 
 extern pthread_rwlock_t ip_rwlock;
 extern char shared_ip[INET_ADDRSTRLEN];

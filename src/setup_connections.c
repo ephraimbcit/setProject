@@ -5,6 +5,7 @@
 #include "../include/setup_connections.h"
 #include "../include/handle_client_requests.h"
 #include "../include/handle_server_responses.h"
+#include "../include/server_ip.h"
 #include "../include/server_status_flags.h"
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -79,6 +80,19 @@ void *setup_connections(void *arg)
             // If no server starter is connected then create a new server connection thread and also set the starter_connected_flag to 1
             if(atomic_exchange(&starter_connected_flag, 1) == 0)
             {
+                char ip_string[INET_ADDRSTRLEN];
+
+                if(inet_ntop(AF_INET, &address.sin_addr, ip_string, sizeof(ip_string)) == NULL)
+                {
+                    perror("Failed to convert address to string");
+                    // handle error (e.g., close connection_fd)
+                    close(connection_fd);
+                    free(new_connection_info);
+                    // Set the starter_connected_flag to 0 if thread creation fails
+                    atomic_store(&starter_connected_flag, 0);
+                    continue;
+                }
+
                 // Create thread for handling communication with the server starter
                 if(pthread_create(&connection_thread, NULL, handle_server_response, (void *)new_connection_info) != 0)
                 {
@@ -89,6 +103,8 @@ void *setup_connections(void *arg)
                     atomic_store(&starter_connected_flag, 0);
                     continue;
                 }
+
+                set_ip(ip_string);
             }
             else
             {
