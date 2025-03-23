@@ -7,5 +7,6 @@
 
 #include <ncurses.h>
 void start_display(void);
+int create_colors(void);
 
 #endif //SETUP_MENU_H

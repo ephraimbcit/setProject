@@ -3,6 +3,7 @@
 //
 
 #include "../include/handle_server_responses.h"
+#include "../include/handle_menu.h"
 #include "../include/server_status_flags.h"
 #include "../include/setup_connections.h"
 #include <arpa/inet.h>
@@ -239,6 +240,9 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
     user_count = get_payload_length(user_count_high_byte, user_count_low_byte);
 
     fprintf(stderr, "User count: %d\n", user_count);
+    //
+    update_server_user_count(user_count);    // Update the user counts on the menu.
+    //
 
     message_count_type = *buffer_ptr++;
 
@@ -259,4 +263,7 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
     message_count = get_payload_length_32(message_count_b1, message_count_b2, message_count_b3, message_count_b4);
 
     fprintf(stderr, "Message count: %d\n", message_count);
+    //
+    update_server_message_count(message_count);    // Update the message counts on the menu.
+    //
 }

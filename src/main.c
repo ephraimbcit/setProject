@@ -33,6 +33,7 @@ int main(void)
 
     pthread_t server_connections_thread;
     pthread_t client_connections_thread;
+    pthread_t input_thread;    // Thread for handling menu
 
     struct connection_info *client_connection_info;
     struct connection_info *server_connection_info;
@@ -40,7 +41,7 @@ int main(void)
     setup_signal_handler();
 
     //---------------- start ncurses display.
-    // start_display();
+    start_display();
     //----------------
 
     // Use helper function to set up listeners for client and server connections
@@ -97,8 +98,16 @@ int main(void)
         return EXIT_FAILURE;
     }
 
+    // Input handler thread
+    if(pthread_create(&input_thread, NULL, handle_input, NULL) != 0)
+    {
+        perror("Failed to create input thread");
+        return EXIT_FAILURE;
+    }
+
     pthread_detach(server_connections_thread);
     pthread_detach(client_connections_thread);
+    pthread_detach(input_thread);
 
     while(!exit_flag)
     {
