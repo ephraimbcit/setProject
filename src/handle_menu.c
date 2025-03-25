@@ -244,6 +244,7 @@ void update_server_user_count(const int user_count)
     // if(interface.server_is_on == SERVER_ONLINE)
     // {
     interface.user_count = user_count;
+    interface.last_updated_time = time(NULL);
     // }
 }
 
@@ -253,6 +254,7 @@ void update_server_message_count(const int message_count)
     // if(interface.server_is_on == SERVER_ONLINE)
     // {
     interface.message_count = message_count;
+    interface.last_updated_time = time(NULL);
     // }
 }
 
