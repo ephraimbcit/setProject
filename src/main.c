@@ -41,6 +41,7 @@ int main(void)
     setup_signal_handler();
 
     //---------------- start ncurses display.
+    system("konsole ./build/menu");
     start_display();
     //----------------
 

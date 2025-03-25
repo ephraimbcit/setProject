@@ -1,1 +1,2 @@
 main src/main.c src/setup_helper.c src/handle_client_requests.c src/handle_server_responses.c src/setup_listener.c src/setup_connections.c src/setup_menu.c src/handle_menu.c curses
+menu src/main.c src/setup_helper.c src/handle_client_requests.c src/handle_server_responses.c src/setup_listener.c src/setup_connections.c src/setup_menu.c src/handle_menu.c curses
