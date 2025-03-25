@@ -3,6 +3,7 @@
 //
 
 #include "handle_menu.h"
+#include "setup_menu.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>

@@ -33,7 +33,7 @@ int main(void)
 
     pthread_t server_connections_thread;
     pthread_t client_connections_thread;
-    pthread_t input_thread;    // Thread for handling menu
+    // pthread_t input_thread;    // Thread for handling menu
 
     struct connection_info *client_connection_info;
     struct connection_info *server_connection_info;
@@ -42,7 +42,7 @@ int main(void)
 
     //---------------- start ncurses display.
     system("konsole ./build/menu");
-    start_display();
+    // start_display();
     //----------------
 
     // Use helper function to set up listeners for client and server connections
@@ -100,15 +100,15 @@ int main(void)
     }
 
     // Input handler thread
-    if(pthread_create(&input_thread, NULL, handle_input, NULL) != 0)
-    {
-        perror("Failed to create input thread");
-        return EXIT_FAILURE;
-    }
+    // if(pthread_create(&input_thread, NULL, handle_input, NULL) != 0)
+    // {
+    //     perror("Failed to create input thread");
+    //     return EXIT_FAILURE;
+    // }
 
     pthread_detach(server_connections_thread);
     pthread_detach(client_connections_thread);
-    pthread_detach(input_thread);
+    // pthread_detach(input_thread);
 
     while(!exit_flag)
     {
@@ -152,7 +152,7 @@ static void sigint_handler(int sig_num)
 {
     const char *shutdown_msg = "Server manager shutting down.\n";
     // End the ncurses display
-    end_display();
+    // end_display();
     exit_flag = 1;
     write(1, shutdown_msg, strlen(shutdown_msg) + 1);
 }

@@ -2,11 +2,51 @@
 // Created by brandonr on 12/02/25.
 //
 #include "setup_menu.h"
-
+#include "handle_menu.h"
+#include <errno.h>
+#include <pthread.h>
+#include <setup_listener.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 // #define TWELVE 12
 #define FOURTEEN 14
 // #define TOTAL_HEIGHT 13
 #define CENTERING_VAL 25
+
+static void setup_signal_handler(void);
+
+static void sigint_handler(int sig_num);
+
+volatile sig_atomic_t exit_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
+int main(void)
+{
+    pthread_t input_thread;    // Thread for handling menu
+
+    setup_signal_handler();
+
+    //---------------- start ncurses display.
+    start_display();
+    //----------------
+
+    // Input handler thread
+    if(pthread_create(&input_thread, NULL, handle_input, NULL) != 0)
+    {
+        perror("Failed to create input thread");
+        return EXIT_FAILURE;
+    }
+
+    pthread_detach(input_thread);
+
+    while(!exit_flag)
+    {
+        sleep(1);
+    }
+
+    return 0;
+}
 
 void start_display(void)
 {
@@ -68,3 +108,42 @@ int create_colors(void)
     init_pair(3, COLOR_BLACK, COLOR_WHITE);    // Highlighted selection
     return 0;
 }
+
+static void setup_signal_handler(void)
+{
+    struct sigaction sa;
+
+    memset(&sa, 0, sizeof(sa));
+
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
+#endif
+    sa.sa_handler = sigint_handler;
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    if(sigaction(SIGINT, &sa, NULL) == -1)
+    {
+        perror("Setup signal handler failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+static void sigint_handler(int sig_num)
+{
+    const char *shutdown_msg = "Server manager shutting down.\n";
+    // End the ncurses display
+    end_display();
+    exit_flag = 1;
+    write(1, shutdown_msg, strlen(shutdown_msg) + 1);
+}
+
+#pragma GCC diagnostic pop
