@@ -3,6 +3,7 @@
 //
 
 #include "../include/handle_server_responses.h"
+#include "../include/handle_menu.h"
 #include "../include/server_status_flags.h"
 #include "../include/setup_connections.h"
 #include <arpa/inet.h>
@@ -28,7 +29,7 @@
 #define ENUM_TYPE_INTEGER 0x02
 #define BIG_BUFFER 256
 
-void send_starter_message(int server_fd, int type);
+// void send_starter_message(int server_fd, int type);
 
 void set_server_running_flag(int value);
 
@@ -58,6 +59,10 @@ void *handle_server_response(void *arg)
     // Send start message to server starter (temporary implementation)
     // Will need to link this to one of Brandon's "start server" buttons to manually tell the starter to start a server.
     send_starter_message(server_fd, SERVER_START);
+
+    // Update the menus server_fd
+    update_server_connection_info(server_fd);
+    //
 
     // artificially simulate that the server says it's online
     atomic_store(&server_running_flag, 1);
@@ -240,6 +245,9 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
 
     // Using a helper function to get the user count since it uses the same logic
     user_count = get_payload_length(user_count_high_byte, user_count_low_byte);
+    //
+    update_server_user_count(user_count);    // Update the user counts on the menu.
+    //
 
     fprintf(stderr, "User count: %d\n", user_count);
 
@@ -260,6 +268,9 @@ void handle_server_diagnostics(int server_fd, int payload_length, uint8_t type)
     message_count_b4 = *buffer_ptr;
 
     message_count = get_payload_length_32(message_count_b1, message_count_b2, message_count_b3, message_count_b4);
+    //
+    update_server_message_count(message_count);    // Update the message counts on the menu.
+    //
 
     fprintf(stderr, "Message count: %d\n", message_count);
 }
