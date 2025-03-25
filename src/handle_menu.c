@@ -241,19 +241,19 @@ void update_info(const char *ip_address, int user_count)
 void update_server_user_count(const int user_count)
 {
     // This check just ensures with the current setup, that the server is "connected/on" so it isn't printing data of a non-existent server.
-    if(interface.server_is_on == SERVER_ONLINE)
-    {
-        interface.user_count = user_count;
-    }
+    // if(interface.server_is_on == SERVER_ONLINE)
+    // {
+    interface.user_count = user_count;
+    // }
 }
 
 void update_server_message_count(const int message_count)
 {
     // This check just ensures with the current setup, that the server is "connected/on" so it isn't printing data of a non-existent server.
-    if(interface.server_is_on == SERVER_ONLINE)
-    {
-        interface.message_count = message_count;
-    }
+    // if(interface.server_is_on == SERVER_ONLINE)
+    // {
+    interface.message_count = message_count;
+    // }
 }
 
 void update_server_status(const uint8_t status)
