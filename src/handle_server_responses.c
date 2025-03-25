@@ -60,7 +60,7 @@ void *handle_server_response(void *arg)
     send_starter_message(server_fd, SERVER_START);
 
     // artificially simulate that the server says it's online
-    atomic_store(&server_running_flag, 1);
+    // atomic_store(&server_running_flag, 1);
 
     while(server_communication_flag)
     {
