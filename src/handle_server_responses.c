@@ -168,7 +168,7 @@ void set_server_running_flag(int value)
 
 void handle_server_status(uint8_t status)
 {
-    // update_server_status(status);
+    update_server_status(status);
     if(status == SERVER_ONLINE)
     {
         set_server_running_flag(SERVER_START);

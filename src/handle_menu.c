@@ -23,13 +23,14 @@
 #define KEY_PRESSED_LINE 16
 #define FOURTEEN 14
 #define FIFTEEN 15
-#define ERROR_LINE 1    // Display any errors on this line
+#define ERROR_LINE 11    // Display any errors on this line
 // #define IP_LINE 1              // Display the ip of the connected server
 #define SERVER_ALIVE_LINE 2    // Display a message for the alive status of the server
-#define USER_COUNT_LINE 3      // Display the user count and the last time it was updated
-#define STARTUP_BUTTON 12      // Display the server startup button
-#define SHUTDOWN_BUTTON 13     // Display the server shutdown button
-#define TIME_BUFFER_SIZE 20    // Time buffer size for formatted local time array
+// #define STARTER_ALIVE_LINE 3         // Display a message for the alive status of the server
+#define SERVER_DIAGNOSTICS_LINE 4    // Display the user count and the last time it was updated
+#define STARTUP_BUTTON 12            // Display the server startup button
+#define SHUTDOWN_BUTTON 13           // Display the server shutdown button
+#define TIME_BUFFER_SIZE 20          // Time buffer size for formatted local time array
 
 #define SLEEP_LENGTH 50000000L
 
@@ -94,7 +95,6 @@ void *handle_input(void *arg)
                     refresh();
                     break;
                 case KEY_DOWN:
-                    // mvprintw(SIX, 1, "Down key pressed!");
                     if((interface.current_selection + 1) != FOURTEEN)
                     {
                         interface.current_selection++;
@@ -102,30 +102,31 @@ void *handle_input(void *arg)
                     refresh();
                     break;
                 case '\n':
-                    // mvprintw(SIX, 1, "Down key pressed!");
                     if(interface.current_selection == STARTUP_BUTTON)
                     {
-                        if(atomic_load(&starter_connected_flag))    // Ensure the starter is connected
+                        if(atomic_load(&starter_connected_flag))
                         {
-                            interface.server_is_on = 1;
+                            interface.error[0] = '\0';
                             send_starter_message(server_info.fd, SERVER_START);
                         }
                         else
                         {
-                            mvprintw(ERROR_LINE, 1, "Error: Server not connected!");
+                            strncpy(interface.error, "Error: Starter not connected!", sizeof(interface.error) - 1);
+                            interface.error[sizeof(interface.error) - 1] = '\0';
                             refresh();
                         }
                     }
                     else if(interface.current_selection == SHUTDOWN_BUTTON)
                     {
-                        if(atomic_load(&starter_connected_flag))    // Ensure the starter is connected
+                        if(atomic_load(&starter_connected_flag))
                         {
-                            interface.server_is_on = 0;
+                            interface.error[0] = '\0';
                             send_starter_message(server_info.fd, SERVER_STOP);
                         }
                         else
                         {
-                            mvprintw(ERROR_LINE, 1, "Error: Server not connected!");
+                            strncpy(interface.error, "Error: Starter not connected!", sizeof(interface.error) - 1);
+                            interface.error[sizeof(interface.error) - 1] = '\0';
                             refresh();
                         }
                     }
@@ -178,25 +179,34 @@ void handle_display(void)
         }
 
         // Display IP Address
+        // attron(COLOR_PAIR(interface.server_is_on ? 2 : 1)); // Green if ON, Red if OFF
+        // mvprintw(SERVER_ALIVE_LINE, 1, "Server Status: %s",
+        //          atomic_load(&server_running_flag) ? "RUNNING" : "STOPPED");
+        // attroff(COLOR_PAIR(interface.server_is_on ? 2 : 1)); // Turn off color
+
         // attron(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Green if ON, Red if OFF
-        // mvprintw(IP_LINE, 1, "Server IP:  %s", interface.ip_address);
+        mvprintw(SERVER_ALIVE_LINE, 1, "Server: %s | Starter: %s", atomic_load(&server_running_flag) ? "RUNNING" : "STOPPED", atomic_load(&starter_connected_flag) ? "CONNECTED" : "DISCONNECTED");
         // attroff(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Turn off color
 
+        attron(COLOR_PAIR(1));
+        mvprintw(ERROR_LINE, 1, "%s", interface.error);
+        attroff(COLOR_PAIR(1));
+
         // Server Status
-        attron(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
-        mvprintw(SERVER_ALIVE_LINE, 1, "%s", interface.server_is_on == SERVER_ONLINE ? "Starter is running" : "Starter is not running");
-        attroff(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
+        // attron(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
+        // mvprintw(STARTER_ALIVE_LINE, 1, "%s", interface.server_is_on == SERVER_ONLINE ? "Starter is running" : "Starter is not running");
+        // attroff(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
 
         // Display Last Updated Time
         if(interface.last_updated_time > 0)
         {
             localtime_r(&interface.last_updated_time, &time_info);
             strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", &time_info);    // Format as HH:MM:SS
-            mvprintw(USER_COUNT_LINE, 1, "%d users   %d messages last updated at %s", interface.user_count, interface.message_count, time_buffer);
+            mvprintw(SERVER_DIAGNOSTICS_LINE, 1, "%d users   %d messages last updated at %s", interface.user_count, interface.message_count, time_buffer);
         }
         else
         {
-            mvprintw(USER_COUNT_LINE, 1, "%d users  %d messages  last updated at N/A", interface.user_count, interface.message_count);
+            mvprintw(SERVER_DIAGNOSTICS_LINE, 1, "%d users  %d messages  last updated at N/A", interface.user_count, interface.message_count);
         }
 
         // Menu Options

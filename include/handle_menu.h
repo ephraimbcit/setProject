@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define MAX_ERROR_LENGTH 256
+
 int end_display(void);
 void update_display(int server_fd);
 void *handle_input(void *arg);
@@ -39,7 +41,8 @@ struct menu
   char vertical_border_char;
   char horizontal_border_char;
   int current_selection;
-  uint8_t server_is_on;
+  int server_is_on;
+  char error[MAX_ERROR_LENGTH];
   int user_count;
   int message_count;
   char ip_address[INET_ADDRSTRLEN];
