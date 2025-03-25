@@ -21,6 +21,13 @@ void *test_update_info(void *arg);
 void generate_random_ip(char *buffer, size_t size);
 void update_server_user_count(const int user_count);
 void update_server_message_count(const int message_count);
+void update_server_connection_info(int server_fd);
+
+struct server_info
+{
+  int fd;
+  int server_on;
+};
 
 struct menu
 {
@@ -36,8 +43,6 @@ struct menu
   int message_count;
   char ip_address[INET_ADDRSTRLEN];
   time_t last_updated_time;
-
-
 };
 // void handle_display(const char *ip_address, int user_count, struct menu *interface);
 void handle_display(void);

@@ -59,6 +59,9 @@ void *handle_server_response(void *arg)
     // Send start message to server starter (temporary implementation)
     // Will need to link this to one of Brandon's "start server" buttons to manually tell the starter to start a server.
     send_starter_message(server_fd, SERVER_START);
+    // Update the menus server_fd
+    update_server_connection_info(server_fd);
+    //
 
     while(server_communication_flag)
     {

@@ -3,6 +3,7 @@
 //
 
 #include "handle_menu.h"
+#include "handle_server_responses.c"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -37,11 +38,20 @@
 #define SLEEP_LENGTH 50000000L
 
 static struct menu interface;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+// Server info for fd
+static struct server_info server_info;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 int end_display(void)
 {
     endwin();
     return 1;
+}
+
+// Used to know the servers fd
+void update_server_connection_info(int server_fd)
+{
+    server_info.fd = server_fd;
+    // server_info.server_on = type;
 }
 
 // display IP address ,user count (last updated, recieved update), add a shutdown button and startup, message for when the server is alve or dead
@@ -109,10 +119,12 @@ void *handle_input(void *arg)
                     if(interface.current_selection == STARTUP_BUTTON)
                     {
                         interface.server_is_on = 1;
+                        send_starter_message( server_info.fd, SERVER_START);
                     }
                     else if(interface.current_selection == SHUTDOWN_BUTTON)
                     {
                         interface.server_is_on = 0;
+                        send_starter_message(server_info.fd, SERVER_STOP);
                     }
                     refresh();
                     break;
