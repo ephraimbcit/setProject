@@ -23,6 +23,9 @@ _Atomic(int) starter_connected_flag = 0;    // NOLINT(cppcoreguidelines-avoid-no
 
 _Atomic(int) server_running_flag = 0;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
+// Store the PID of the menu process
+static pid_t menu_pid = -1;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 int main(void)
 {
     int server_fd;
@@ -41,7 +44,19 @@ int main(void)
     setup_signal_handler();
 
     //---------------- start ncurses display.
-    system("konsole ./build/menu");
+    menu_pid = fork();
+    if(menu_pid == 0)
+    {
+        // Child process: Start the menu in a new terminal
+        execlp("konsole", "konsole", "-e", "./build/menu", NULL);
+        perror("Failed to start menu");
+        exit(EXIT_FAILURE);
+    }
+    else if(menu_pid < 0)
+    {
+        perror("Failed to fork for menu");
+        exit(EXIT_FAILURE);
+    }
     // start_display();
     //----------------
 
@@ -155,6 +170,11 @@ static void sigint_handler(int sig_num)
     // end_display();
     exit_flag = 1;
     write(1, shutdown_msg, strlen(shutdown_msg) + 1);
+    if(menu_pid > 0)
+    {
+        // Send SIGTERM to gracefully terminate the menu process
+        kill(menu_pid, SIGTERM);
+    }
 }
 
 #pragma GCC diagnostic pop
