@@ -86,8 +86,6 @@ void *handle_client(void *arg)
 
         ip_length = (int)strlen(active_ip);
 
-        printf("ip len: %d\n", ip_length);
-
         *manager_response_ptr++ = UTF8STRING_PROTOCOL;
         *manager_response_ptr++ = (uint8_t)ip_length;
 
