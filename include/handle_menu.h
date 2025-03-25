@@ -22,6 +22,7 @@ void generate_random_ip(char *buffer, size_t size);
 void update_server_user_count(const int user_count);
 void update_server_message_count(const int message_count);
 void update_server_connection_info(int server_fd);
+void update_server_status(const uint8_t status);
 
 struct server_info
 {
@@ -38,7 +39,7 @@ struct menu
   char vertical_border_char;
   char horizontal_border_char;
   int current_selection;
-  int server_is_on;
+  uint8_t server_is_on;
   int user_count;
   int message_count;
   char ip_address[INET_ADDRSTRLEN];
