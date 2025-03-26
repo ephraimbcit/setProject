@@ -7,9 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __APPLE__
+    #define SOCK_CLOEXEC 0
+#endif
 void setup_socket(int *fd)
 {
-    *fd = socket(AF_INET, SOCK_STREAM, 0);
+    *fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
     if(*fd == -1)
     {
         perror("Error during socket creation:\n");

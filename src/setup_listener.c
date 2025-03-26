@@ -6,6 +6,7 @@
 #include "../include/setup_helper.h"
 #include <arpa/inet.h>
 #include <errno.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>

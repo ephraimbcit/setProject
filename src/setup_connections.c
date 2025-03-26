@@ -9,6 +9,7 @@
 #include "../include/server_status_flags.h"
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <unistd.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdio.h>
@@ -120,7 +121,9 @@ void *setup_connections(void *arg)
             }
         }
         // Detach the connection thread here since we don't need the setup thread to wait on the spawned client and starter threads
-        pthread_detach(connection_thread);
+        if (connection_thread != 0) {
+            pthread_detach(connection_thread);
+        }
     }
     // Ensures that all the threads that this function spawns will finish execution before main exits.
     pthread_exit(NULL);

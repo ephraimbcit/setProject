@@ -3,6 +3,7 @@
 #include "../include/setup_connections.h"
 #include "../include/setup_menu.h"
 #include <errno.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <setup_listener.h>
 #include <signal.h>
