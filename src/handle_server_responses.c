@@ -88,6 +88,7 @@ void *handle_server_response(void *arg)
             perror("Error reading server response");
             close(server_fd);
             atomic_store(&starter_connected_flag, 0);
+            atomic_store(&server_running_flag, 0);
             server_communication_flag = 0;
         }
 
@@ -100,6 +101,7 @@ void *handle_server_response(void *arg)
             perror("Server response version not supported");
             close(server_fd);
             atomic_store(&starter_connected_flag, 0);
+            atomic_store(&server_running_flag, 0);
             server_communication_flag = 0;
         }
 
