@@ -52,6 +52,12 @@ void *setup_connections(void *arg)
             continue;
         }
 
+        if(type == TYPE_SERVER && atomic_load(&starter_connected_flag))
+        {
+            close(connection_fd);
+            continue;  // ← Don't break, just ignore this one and keep listening
+        }
+
         new_connection_info = malloc(sizeof(struct connection_info));
 
         if(!new_connection_info)
