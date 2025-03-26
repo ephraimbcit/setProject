@@ -82,6 +82,7 @@ void *handle_server_response(void *arg)
             printf("Bytes received: %d\n", (int)bytes_recieved);
             perror("Error reading server response");
             close(server_fd);
+            atomic_store(&starter_connected_flag, 0);
             server_communication_flag = 0;
         }
 
@@ -93,6 +94,7 @@ void *handle_server_response(void *arg)
         {
             perror("Server response version not supported");
             close(server_fd);
+            atomic_store(&starter_connected_flag, 0);
             server_communication_flag = 0;
         }
 
