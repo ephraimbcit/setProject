@@ -243,7 +243,7 @@ void update_server_user_count(const int user_count)
     // This check just ensures with the current setup, that the server is "connected/on" so it isn't printing data of a non-existent server.
     // if(interface.server_is_on == SERVER_ONLINE)
     // {
-    interface.user_count = user_count;
+    interface.user_count        = user_count;
     interface.last_updated_time = time(NULL);
     // }
 }
@@ -253,7 +253,7 @@ void update_server_message_count(const int message_count)
     // This check just ensures with the current setup, that the server is "connected/on" so it isn't printing data of a non-existent server.
     // if(interface.server_is_on == SERVER_ONLINE)
     // {
-    interface.message_count = message_count;
+    interface.message_count     = message_count;
     interface.last_updated_time = time(NULL);
     // }
 }

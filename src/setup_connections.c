@@ -109,6 +109,7 @@ void *setup_connections(void *arg)
             else
             {
                 // Need to connection info struct here if a starter attempts to connect while one is already connected
+                close(connection_fd);
                 free(new_connection_info);
             }
         }
