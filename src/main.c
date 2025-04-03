@@ -3,13 +3,13 @@
 #include "../include/setup_connections.h"
 #include "../include/setup_menu.h"
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <setup_listener.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define TYPE_SERVER 1
 #define TYPE_CLIENT 2

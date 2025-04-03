@@ -6,18 +6,18 @@
 #include "../include/setup_helper.h"
 #include <arpa/inet.h>
 #include <errno.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define TYPE_SERVER 1
 #define TYPE_CLIENT 2
 
 #define SERVER_PORT 9000
-#define CLIENT_PORT 8000
+#define CLIENT_PORT 8080
 
 // Credits to Will
 static int setSockReuse(int fd, int *err)
