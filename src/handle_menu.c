@@ -26,8 +26,6 @@
 #define ERROR_LINE 11    // Display any errors on this line
 // #define IP_LINE 1              // Display the ip of the connected server
 #define SERVER_ALIVE_LINE 2    // Display a message for the alive status of the server
-#define NINETEEN 19            // Position on the same server message line to print starter status
-#define SEVENTEEN 17           // Pipe symbol for seperation of status
 // #define STARTER_ALIVE_LINE 3         // Display a message for the alive status of the server
 #define SERVER_DIAGNOSTICS_LINE 4    // Display the user count and the last time it was updated
 #define STARTUP_BUTTON 12            // Display the server startup button
@@ -187,22 +185,17 @@ void handle_display(void)
         // attroff(COLOR_PAIR(interface.server_is_on ? 2 : 1)); // Turn off color
 
         // attron(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Green if ON, Red if OFF
-        // mvprintw(SERVER_ALIVE_LINE, 1, "Server: %s | Starter: %s", atomic_load(&server_running_flag) ? "RUNNING" : "STOPPED", atomic_load(&starter_connected_flag) ? "CONNECTED" : "DISCONNECTED");
+        mvprintw(SERVER_ALIVE_LINE, 1, "Server: %s | Starter: %s", atomic_load(&server_running_flag) ? "RUNNING" : "STOPPED", atomic_load(&starter_connected_flag) ? "CONNECTED" : "DISCONNECTED");
         // attroff(COLOR_PAIR(interface.server_is_on ? 2 : 1));    // Turn off color
-
-        attron(COLOR_PAIR(atomic_load(&server_running_flag) ? 2 : 1));
-        mvprintw(SERVER_ALIVE_LINE, 1, "Server: %s", atomic_load(&server_running_flag) ? "RUNNING" : "STOPPED");
-        attroff(COLOR_PAIR(atomic_load(&server_running_flag) ? 2 : 1));
-
-        mvprintw(SERVER_ALIVE_LINE, SEVENTEEN, "|");
-
-        attron(COLOR_PAIR(atomic_load(&starter_connected_flag) ? 2 : 1));
-        mvprintw(SERVER_ALIVE_LINE, NINETEEN, "Starter: %s", atomic_load(&starter_connected_flag) ? "CONNECTED" : "DISCONNECTED");
-        attroff(COLOR_PAIR(atomic_load(&starter_connected_flag) ? 2 : 1));
 
         attron(COLOR_PAIR(1));
         mvprintw(ERROR_LINE, 1, "%s", interface.error);
         attroff(COLOR_PAIR(1));
+
+        // Server Status
+        // attron(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
+        // mvprintw(STARTER_ALIVE_LINE, 1, "%s", interface.server_is_on == SERVER_ONLINE ? "Starter is running" : "Starter is not running");
+        // attroff(COLOR_PAIR(interface.server_is_on == SERVER_ONLINE ? 2 : 1));    // Green if ON, Red if OFF
 
         // Display Last Updated Time
         if(interface.last_updated_time > 0)
